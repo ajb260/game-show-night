@@ -738,9 +738,12 @@
         c.opened = true;
         playCaseOpen();
         state.casesLeftThisRound--;
+        if (state.casesLeftThisRound === 0) {
+          state.phase = 'banker'; // lock grid now so no cases are clickable during the delay
+        }
         renderGrid();
         renderValuesBoard();
-        if (state.casesLeftThisRound === 0) {
+        if (state.phase === 'banker') {
           setTimeout(showBankerOffer, 700);
         } else {
           setRoundInfo();
@@ -800,6 +803,7 @@
         setTimeout(showFinalSwap, 400);
       } else {
         state.currentRound++;
+        state.phase = 'open_cases';
         state.casesLeftThisRound = state.roundsConfig[state.currentRound - 1];
         updateTopBar();
         setRoundInfo();
