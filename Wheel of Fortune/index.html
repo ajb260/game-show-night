@@ -79,6 +79,18 @@
       text-align: right;
       flex-shrink: 0;
     }
+    .btn-remove-player {
+      background: transparent;
+      border: 1px solid #8c1a1a;
+      color: #ff7070;
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+    .btn-remove-player:hover { background: #8c1a1a; }
 
     .btn {
       padding: 12px 28px;
@@ -385,25 +397,9 @@
   <!-- SETUP -->
   <div class="modal visible" id="modal-setup">
     <h2>Wheel of Fortune</h2>
-    <p>Enter player names to begin</p>
-    <div class="modal-players">
-      <div class="modal-player-row">
-        <span class="modal-player-label">Player 1</span>
-        <input type="text" id="name-0" placeholder="Player 1" maxlength="16">
-      </div>
-      <div class="modal-player-row">
-        <span class="modal-player-label">Player 2</span>
-        <input type="text" id="name-1" placeholder="Player 2" maxlength="16">
-      </div>
-      <div class="modal-player-row">
-        <span class="modal-player-label">Player 3</span>
-        <input type="text" id="name-2" placeholder="Player 3" maxlength="16">
-      </div>
-      <div class="modal-player-row">
-        <span class="modal-player-label">Player 4</span>
-        <input type="text" id="name-3" placeholder="Player 4" maxlength="16">
-      </div>
-    </div>
+    <p>Enter player names to begin (2–8 players)</p>
+    <div class="modal-players" id="player-list"></div>
+    <button class="btn btn-blue" onclick="addPlayerRow()" id="btn-add-player">+ Add Player</button>
     <button class="btn btn-gold" id="btn-start-game">Start Game</button>
   </div>
 
@@ -1053,7 +1049,7 @@ function handleConsonantGuess(letter) {
       });
     }
   } else {
-    const nextName = GS.players[(GS.currentPlayerIndex + 1) % 4].name;
+    const nextName = GS.players[(GS.currentPlayerIndex + 1) % GS.players.length].name;
     showGuessResultModal('#e63946', `✗ No "${letter}"`, 'Not in the puzzle.', `Turn passes to ${nextName}.`, () => {
       advanceToNextPlayer();
     });
@@ -1078,7 +1074,7 @@ function handleVowelGuess(letter) {
       });
     }
   } else {
-    const nextName = GS.players[(GS.currentPlayerIndex + 1) % 4].name;
+    const nextName = GS.players[(GS.currentPlayerIndex + 1) % GS.players.length].name;
     showGuessResultModal('#e63946', `✗ No "${letter}"`, 'Not in the puzzle.', `Turn passes to ${nextName}.`, () => {
       advanceToNextPlayer();
     });
@@ -1144,7 +1140,7 @@ function openSolveModal() {
     if (answer === correct) {
       endRound(GS.currentPlayerIndex);
     } else {
-      const nextName = GS.players[(GS.currentPlayerIndex + 1) % 4].name;
+      const nextName = GS.players[(GS.currentPlayerIndex + 1) % GS.players.length].name;
       showGuessResultModal('#e63946', '✗ Incorrect!', 'That\'s not the puzzle.', `Turn passes to ${nextName}.`, () => {
         advanceToNextPlayer();
       });
@@ -1168,7 +1164,7 @@ function openSolveModal() {
 //  TURN MANAGEMENT
 // ══════════════════════════════════════════════════════════════════
 function advanceToNextPlayer() {
-  GS.currentPlayerIndex = (GS.currentPlayerIndex + 1) % 4;
+  GS.currentPlayerIndex = (GS.currentPlayerIndex + 1) % GS.players.length;
   GS.turnPhase = 'SPIN';
   updateScoreboard();
   updateTurnLabel();
@@ -1425,23 +1421,56 @@ function updateTurnLabel() {
 // ══════════════════════════════════════════════════════════════════
 //  SETUP
 // ══════════════════════════════════════════════════════════════════
+let playerRowCount = 0;
+
+function addPlayerRow() {
+  if (playerRowCount >= 8) return;
+  playerRowCount++;
+  const n = playerRowCount;
+  const list = document.getElementById('player-list');
+  const row = document.createElement('div');
+  row.className = 'modal-player-row';
+  row.id = 'player-row-' + n;
+  row.innerHTML =
+    `<span class="modal-player-label">Player ${n}</span>` +
+    `<input type="text" id="name-${n}" placeholder="Player ${n}" maxlength="16">` +
+    (n > 2 ? `<button class="btn-remove-player" onclick="removePlayerRow(${n})">✕</button>` : '');
+  list.appendChild(row);
+  document.getElementById('name-' + n).focus();
+  if (playerRowCount >= 8) document.getElementById('btn-add-player').disabled = true;
+}
+
+function removePlayerRow(n) {
+  const row = document.getElementById('player-row-' + n);
+  if (row) row.remove();
+  document.getElementById('btn-add-player').disabled = false;
+}
+
 function showSetupModal() {
   GS.players = [];
   GS.currentRound = 0;
   GS.usedPuzzleIndices = new Set();
   GS.wheelAngle = 0;
   GS.turnPhase = 'SPIN';
+  playerRowCount = 0;
+  document.getElementById('player-list').innerHTML = '';
+  document.getElementById('btn-add-player').disabled = false;
+  addPlayerRow(); addPlayerRow();
   showModal('modal-setup');
   drawWheel(0);
 }
 
 function startGame() {
-  const names = [0,1,2,3].map(i => {
-    const val = document.getElementById('name-' + i).value.trim();
-    return val || 'Player ' + (i + 1);
-  });
+  const finalNames = [];
+  for (let i = 1; i <= playerRowCount; i++) {
+    const el = document.getElementById('name-' + i);
+    if (!el) continue;
+    finalNames.push(el.value.trim() || 'Player ' + i);
+  }
 
-  GS.players = names.map(name => ({
+  if (finalNames.length < 1) { alert('Add at least one player.'); return; }
+
+  GS.players = finalNames.map(name => ({
     name, roundEarnings: 0, totalScore: 0, hasFreeSpin: false
   }));
 
