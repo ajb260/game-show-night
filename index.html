@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Show Night</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a2e;
+      color: #fff;
+      font-family: 'Arial Black', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      padding: 40px 20px;
+      user-select: none;
+    }
+    h1 {
+      color: #ffd700;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      letter-spacing: 6px;
+      text-align: center;
+      text-shadow: 0 0 30px rgba(255,215,0,0.5);
+      text-transform: uppercase;
+    }
+    .subtitle {
+      color: #aad4ff;
+      font-size: 1rem;
+      letter-spacing: 2px;
+      text-align: center;
+      margin-top: -36px;
+    }
+    .games {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 900px;
+      width: 100%;
+    }
+    .game-card {
+      background: #12124a;
+      border: 3px solid #2a2a6e;
+      border-radius: 16px;
+      padding: 36px 28px;
+      width: 240px;
+      text-align: center;
+      text-decoration: none;
+      color: #fff;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .game-card:hover {
+      transform: scale(1.05);
+      border-color: #ffd700;
+      box-shadow: 0 0 28px rgba(255,215,0,0.3);
+    }
+    .game-card:active { transform: scale(0.98); }
+    .game-icon { font-size: 3.5rem; line-height: 1; }
+    .game-title {
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #ffd700;
+    }
+    .game-desc { font-size: 0.8rem; color: #aad4ff; line-height: 1.5; letter-spacing: 0.5px; }
+    .play-btn {
+      margin-top: 6px;
+      background: #ffd700;
+      color: #0a0a2e;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 22px;
+      font-size: 0.9rem;
+      font-family: 'Arial Black', Arial, sans-serif;
+      font-weight: bold;
+      letter-spacing: 1px;
+      cursor: pointer;
+      pointer-events: none;
+    }
+    .game-card:hover .play-btn { background: #ffe84d; }
+  </style>
+</head>
+<body>
+  <h1>Game Show Night</h1>
+  <p class="subtitle">Choose your game</p>
+
+  <div class="games">
+
+    <a class="game-card" href="./Jeopardy/">
+      <div class="game-icon">🎯</div>
+      <div class="game-title">Jeopardy!</div>
+      <div class="game-desc">Answer questions across categories. Daily Doubles and Final Jeopardy included.</div>
+      <div class="play-btn">PLAY</div>
+    </a>
+
+    <a class="game-card" href="./Wheel of Fortune/">
+      <div class="game-icon">🎡</div>
+      <div class="game-title">Wheel of Fortune</div>
+      <div class="game-desc">Spin the wheel and guess letters to solve the puzzle before the others do.</div>
+      <div class="play-btn">PLAY</div>
+    </a>
+
+    <a class="game-card" href="./Deal or no Deal/">
+      <div class="game-icon">💼</div>
+      <div class="game-title">Deal or No Deal</div>
+      <div class="game-desc">Pick a briefcase, open the rest, and decide if the banker's offer is worth it.</div>
+      <div class="play-btn">PLAY</div>
+    </a>
+
+  </div>
+</body>
+</html>

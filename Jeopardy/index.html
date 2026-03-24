@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JEOPARDY!</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a2e;
+      color: #fff;
+      font-family: 'Arial Black', Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── LAYOUT ── */
+    #game-container {
+      display: grid;
+      grid-template-rows: 56px 1fr;
+      height: 100vh;
+    }
+
+    #top-bar {
+      background: #06063a;
+      border-bottom: 3px solid #ffd700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+
+    #top-bar h1 {
+      color: #ffd700;
+      font-size: 1.8rem;
+      letter-spacing: 6px;
+      text-shadow: 0 0 20px rgba(255,215,0,0.5);
+    }
+
+    #top-bar-actions { display: flex; gap: 10px; }
+
+    #main-area {
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── BOARD ── */
+    #board-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: auto repeat(5, 1fr);
+      gap: 5px;
+      padding: 8px;
+    }
+
+    .cat-header {
+      background: #12124a;
+      border: 2px solid #2a2a6e;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 6px;
+      text-align: center;
+      color: #ffd700;
+      font-size: clamp(0.6rem, 1.1vw, 0.85rem);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+
+    .tile {
+      background: #1a1a8e;
+      border: 2px solid #2a2a8e;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #ffd700;
+      font-size: clamp(1rem, 2.2vw, 1.8rem);
+      font-weight: 900;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+      transition: background 0.15s ease, transform 0.1s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    .tile:hover:not(.used) {
+      background: #2424b0;
+      border-color: #ffd700;
+      transform: scale(1.03);
+    }
+
+    .tile:active:not(.used) { transform: scale(0.97); }
+
+    .tile.used {
+      background: #080820;
+      border-color: #12122a;
+      color: #12122a;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* ── SCOREBOARD SIDEBAR ── */
+    #scoreboard {
+      width: 230px;
+      background: #06063a;
+      border-left: 3px solid #2a2a6e;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 10px;
+      gap: 8px;
+      overflow-y: auto;
+    }
+
+    #scoreboard h2 {
+      color: #ffd700;
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-align: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #2a2a6e;
+    }
+
+    .score-card {
+      background: #12124a;
+      border: 2px solid #2a2a6e;
+      border-radius: 10px;
+      padding: 10px 14px;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .score-card.pulse {
+      border-color: #ffd700;
+      box-shadow: 0 0 14px rgba(255,215,0,0.5);
+    }
+
+    .score-name {
+      font-size: 0.75rem;
+      color: #aad4ff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .score-value {
+      font-size: 1.5rem;
+      color: #ffd700;
+      font-weight: 900;
+    }
+
+    .score-value.negative { color: #ff4444; }
+
+    /* ── MODAL OVERLAY ── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #modal-overlay.visible { display: flex; }
+
+    .modal {
+      display: none;
+      background: #12124a;
+      border: 3px solid #ffd700;
+      border-radius: 16px;
+      padding: 36px 44px;
+      max-width: 680px;
+      width: 92%;
+      text-align: center;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .modal.visible { display: flex; }
+
+    .modal h2 {
+      color: #ffd700;
+      font-size: 1.6rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .modal-category-label {
+      color: #aad4ff;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: -8px;
+    }
+
+    .modal-value {
+      color: #ffd700;
+      font-size: 2.4rem;
+      font-weight: 900;
+    }
+
+    .modal-clue {
+      color: #fff;
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      line-height: 1.5;
+      font-family: Georgia, serif;
+      font-weight: normal;
+    }
+
+    .modal-divider {
+      border: none;
+      border-top: 1px solid #3a3a7e;
+    }
+
+    .modal-answer {
+      color: #7eff9a;
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      font-family: Georgia, serif;
+      font-weight: normal;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    .modal-answer.revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .score-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .score-btn-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .score-btn-label {
+      font-size: 0.65rem;
+      color: #aad4ff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .score-btn-row { display: flex; gap: 4px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      background: #ffd700;
+      color: #0a0a2e;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-family: 'Arial Black', Arial, sans-serif;
+      font-size: 0.9rem;
+      font-weight: 900;
+      cursor: pointer;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .btn:hover { background: #ffe44d; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-secondary {
+      background: transparent;
+      color: #aad4ff;
+      border: 2px solid #4a4aae;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-family: 'Arial Black', Arial, sans-serif;
+      font-size: 0.8rem;
+      font-weight: 900;
+      cursor: pointer;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .btn-secondary:hover { border-color: #ffd700; color: #ffd700; }
+
+    .btn-score-plus {
+      background: #1a8e1a;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-family: 'Arial Black', Arial, sans-serif;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-score-plus:hover { background: #22aa22; }
+
+    .btn-score-minus {
+      background: #8e1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-family: 'Arial Black', Arial, sans-serif;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-score-minus:hover { background: #aa2222; }
+
+    /* ── SETUP MODAL ── */
+    #modal-setup .modal-players {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
+    #modal-setup .modal-player-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #modal-setup .modal-player-label {
+      font-size: 0.85rem;
+      color: #ffd700;
+      width: 70px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    #modal-setup input[type="text"] {
+      background: #0a0a2e;
+      border: 2px solid #4a4aae;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1.1rem;
+      padding: 9px 14px;
+      flex: 1;
+      text-align: center;
+      font-family: 'Arial Black', Arial, sans-serif;
+    }
+    #modal-setup input[type="text"]:focus {
+      outline: none;
+      border-color: #ffd700;
+    }
+
+    #modal-setup .btn-add-team {
+      background: transparent;
+      color: #aad4ff;
+      border: 2px dashed #4a4aae;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      font-family: 'Arial Black', Arial, sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #modal-setup .btn-add-team:hover { border-color: #ffd700; color: #ffd700; }
+
+    /* ── DAILY DOUBLE MODAL ── */
+    #modal-daily-double {
+      background: #1a0a00;
+      border-color: #ff6b35;
+      max-width: 520px;
+    }
+
+    #modal-daily-double h2 {
+      color: #ff6b35;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      text-shadow: 0 0 30px rgba(255,107,53,0.7);
+      letter-spacing: 4px;
+    }
+
+    #modal-daily-double .dd-category {
+      color: #ffd700;
+      font-size: 1rem;
+      letter-spacing: 2px;
+    }
+
+    #modal-daily-double .dd-wager-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #modal-daily-double .dd-wager-label {
+      color: #aad4ff;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+    }
+
+    #dd-wager-input {
+      background: #0a0a2e;
+      border: 2px solid #ff6b35;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1.3rem;
+      padding: 8px 14px;
+      width: 130px;
+      text-align: center;
+      font-family: 'Arial Black', Arial, sans-serif;
+    }
+    #dd-wager-input:focus { outline: none; border-color: #ffd700; }
+
+    /* ── FINAL SCORES MODAL ── */
+    #modal-final .final-scores-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
+    #modal-final .final-score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0a0a2e;
+      border-radius: 8px;
+      padding: 12px 18px;
+      border: 2px solid #2a2a6e;
+    }
+
+    #modal-final .final-score-row.winner {
+      border-color: #ffd700;
+      background: #1a1a00;
+    }
+
+    #modal-final .final-rank {
+      color: #ffd700;
+      font-size: 1.1rem;
+      width: 30px;
+    }
+
+    #modal-final .final-name {
+      flex: 1;
+      color: #fff;
+      font-size: 1rem;
+      text-align: left;
+      padding-left: 8px;
+    }
+
+    #modal-final .final-score {
+      color: #ffd700;
+      font-size: 1.3rem;
+    }
+
+    #modal-final .final-score.negative { color: #ff4444; }
+
+    /* ── DIFFICULTY SELECTOR ── */
+    .diff-selector-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .diff-selector-label {
+      color: #ffd700;
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .diff-selector {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .diff-btn {
+      flex: 1;
+      background: #0a0a2e;
+      color: #aad4ff;
+      border: 2px solid #4a4aae;
+      border-radius: 10px;
+      padding: 12px 8px;
+      cursor: pointer;
+      font-family: 'Arial Black', Arial, sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+
+    .diff-btn span {
+      font-size: 0.65rem;
+      color: #5a5aae;
+      font-family: Georgia, serif;
+      font-weight: normal;
+      letter-spacing: 0.5px;
+      text-transform: none;
+    }
+
+    .diff-btn.active {
+      background: #1a1a8e;
+      border-color: #ffd700;
+      color: #ffd700;
+    }
+
+    .diff-btn.active span { color: #aad4ff; }
+    .diff-btn:hover:not(.active) { border-color: #8888cc; color: #ccddff; }
+
+    /* ── FINAL JEOPARDY ── */
+    #modal-fj-category {
+      background: #06063a;
+      border-color: #ffd700;
+      max-width: 560px;
+    }
+
+    #modal-fj-category h2 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      letter-spacing: 4px;
+    }
+
+    .fj-category-name {
+      color: #fff;
+      font-size: clamp(1.4rem, 3vw, 2.2rem);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: #1a1a8e;
+      border: 2px solid #2a2a8e;
+      border-radius: 10px;
+      padding: 18px 24px;
+    }
+
+    .fj-wager-note {
+      color: #aad4ff;
+      font-size: 0.9rem;
+      font-family: Georgia, serif;
+      font-weight: normal;
+      letter-spacing: 1px;
+    }
+
+    #modal-fj-question {
+      max-width: 680px;
+    }
+
+    #modal-fj-question .modal-clue {
+      font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+    }
+
+    #modal-fj-answer {
+      max-width: 720px;
+    }
+
+    .fj-wager-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .fj-wager-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #0a0a2e;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    .fj-wager-name {
+      flex: 1;
+      font-size: 0.85rem;
+      color: #ffd700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .fj-wager-input {
+      background: #12124a;
+      border: 2px solid #4a4aae;
+      border-radius: 6px;
+      color: #fff;
+      font-family: 'Arial Black', Arial, sans-serif;
+      font-size: 1rem;
+      padding: 6px 10px;
+      width: 100px;
+      text-align: center;
+    }
+    .fj-wager-input:focus { outline: none; border-color: #ffd700; }
+
+    .btn-fj-correct {
+      background: #1a8e1a;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-family: 'Arial Black', Arial, sans-serif;
+      font-size: 0.75rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-fj-correct:hover { background: #22aa22; }
+
+    .btn-fj-wrong {
+      background: #8e1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-family: 'Arial Black', Arial, sans-serif;
+      font-size: 0.75rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-fj-wrong:hover { background: #aa2222; }
+
+    /* ── QUESTION HINT ── */
+    #keyboard-hint {
+      position: fixed;
+      bottom: 10px;
+      right: 14px;
+      color: #3a3a6e;
+      font-size: 0.65rem;
+      letter-spacing: 1px;
+      font-family: monospace;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="top-bar">
+    <h1>JEOPARDY!</h1>
+    <div id="top-bar-actions">
+      <button class="btn-secondary" id="btn-change-teams" onclick="location.reload()">Change Teams</button>
+      <button class="btn-secondary" id="btn-new-game" onclick="resetGame()" style="display:none">New Game</button>
+    </div>
+  </div>
+
+  <div id="main-area">
+    <div id="board-container"></div>
+    <div id="scoreboard">
+      <h2>Scoreboard</h2>
+      <div id="score-cards"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODALS ── -->
+<div id="modal-overlay">
+
+  <!-- SETUP -->
+  <div class="modal visible" id="modal-setup">
+    <h2>JEOPARDY!</h2>
+    <p style="color:#aad4ff;font-size:0.9rem;letter-spacing:1px;font-family:Georgia,serif;font-weight:normal">Enter team names to begin</p>
+    <div class="modal-players" id="player-inputs"></div>
+    <button class="btn-add-team" id="btn-add-team">+ Add Team</button>
+    <div class="diff-selector-wrap">
+      <div class="diff-selector-label">Difficulty</div>
+      <div class="diff-selector">
+        <button class="diff-btn" data-diff="easy">Easy<span>Ages 12–14</span></button>
+        <button class="diff-btn active" data-diff="medium">Medium<span>Ages 14–16</span></button>
+        <button class="diff-btn" data-diff="hard">Hard<span>Ages 16–18</span></button>
+      </div>
+    </div>
+    <button class="btn" id="btn-start">Let's Play!</button>
+  </div>
+
+  <!-- QUESTION -->
+  <div class="modal" id="modal-question">
+    <div class="modal-category-label" id="q-category"></div>
+    <div class="modal-value" id="q-value"></div>
+    <p class="modal-clue" id="q-clue"></p>
+    <button class="btn" id="btn-reveal">Reveal Answer</button>
+  </div>
+
+  <!-- ANSWER (replaces question modal content after reveal) -->
+  <div class="modal" id="modal-answer">
+    <div class="modal-category-label" id="a-category"></div>
+    <div class="modal-value" id="a-value"></div>
+    <p class="modal-clue" id="a-clue"></p>
+    <hr class="modal-divider">
+    <p class="modal-answer" id="a-answer"></p>
+    <div class="score-buttons" id="score-btns"></div>
+    <button class="btn-secondary" id="btn-back">Back to Board</button>
+  </div>
+
+  <!-- DAILY DOUBLE -->
+  <div class="modal" id="modal-daily-double">
+    <h2>Daily Double!</h2>
+    <div class="dd-category" id="dd-category"></div>
+    <div class="dd-wager-row">
+      <span class="dd-wager-label">Wager: $</span>
+      <input type="number" id="dd-wager-input" min="0" value="200">
+    </div>
+    <button class="btn" id="btn-dd-show">Show Clue</button>
+  </div>
+
+  <!-- FINAL JEOPARDY – CATEGORY REVEAL -->
+  <div class="modal" id="modal-fj-category">
+    <h2>Final Jeopardy!</h2>
+    <div class="fj-category-name" id="fj-cat-name"></div>
+    <p class="fj-wager-note">All teams: write your wager on paper now.</p>
+    <button class="btn" id="btn-fj-show-q">Show Question</button>
+  </div>
+
+  <!-- FINAL JEOPARDY – QUESTION -->
+  <div class="modal" id="modal-fj-question">
+    <h2>Final Jeopardy!</h2>
+    <div class="modal-category-label" id="fj-q-category"></div>
+    <p class="modal-clue" id="fj-clue"></p>
+    <button class="btn" id="btn-fj-reveal">Reveal Answer</button>
+  </div>
+
+  <!-- FINAL JEOPARDY – ANSWER + WAGERS -->
+  <div class="modal" id="modal-fj-answer">
+    <div class="modal-category-label" id="fj-a-category"></div>
+    <p class="modal-clue" id="fj-a-clue"></p>
+    <hr class="modal-divider">
+    <p class="modal-answer revealed" id="fj-answer"></p>
+    <p class="fj-wager-note" style="margin-top:4px">Enter each team's wager, then mark correct or wrong.</p>
+    <div class="fj-wager-list" id="fj-wager-list"></div>
+    <button class="btn" id="btn-fj-scores">See Final Scores</button>
+  </div>
+
+  <!-- FINAL SCORES -->
+  <div class="modal" id="modal-final">
+    <h2>Final Scores</h2>
+    <div class="final-scores-list" id="final-scores-list"></div>
+    <button class="btn" onclick="location.reload()">Play Again</button>
+  </div>
+
+</div>
+
+<div id="keyboard-hint">SPACE = reveal answer &nbsp;·&nbsp; ESC = back to board</div>
+
+<script src="questions.js"></script>
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const state = {
+  players: [],
+  usedTiles: new Set(),
+  dailyDoubleKey: null,   // "catIdx-rowIdx"
+  activeQuestion: null,   // { catIdx, rowIdx, value, q, a, isDailyDouble }
+  phase: 'setup',         // setup | board | question | answer | dd | gameover
+  difficulty: 'medium'    // easy | medium | hard
+};
+
+// Difficulty selector buttons
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.difficulty = btn.dataset.diff;
+  });
+});
+
+// Active categories for the current game (6 randomly chosen from ALL_CATEGORIES)
+let categories = [];
+
+function selectCategories() {
+  const pool = [...ALL_CATEGORIES];
+  // Fisher-Yates shuffle, then take first 6
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  categories = pool.slice(0, 6);
+}
+
+// ── AUDIO ──────────────────────────────────────────────────────────────────
+function playDailyDoubleSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[880, 0, 0.15], [660, 0.15, 0.15], [440, 0.3, 0.4]].forEach(([freq, when, dur]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'square';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + when);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + when + dur);
+      osc.start(ctx.currentTime + when);
+      osc.stop(ctx.currentTime + when + dur);
+    });
+  } catch (e) { /* audio not available */ }
+}
+
+// ── BOARD ──────────────────────────────────────────────────────────────────
+function buildBoard() {
+  const container = document.getElementById('board-container');
+  container.innerHTML = '';
+
+  // Category headers
+  categories.forEach(cat => {
+    const header = document.createElement('div');
+    header.className = 'cat-header';
+    header.textContent = cat.name;
+    container.appendChild(header);
+  });
+
+  // Question tiles (rows 1-5)
+  for (let row = 0; row < 5; row++) {
+    categories.forEach((cat, catIdx) => {
+      const q = cat.questions[state.difficulty][row];
+      const key = `${catIdx}-${row}`;
+      const tile = document.createElement('button');
+      tile.className = 'tile' + (state.usedTiles.has(key) ? ' used' : '');
+      tile.dataset.cat = catIdx;
+      tile.dataset.row = row;
+      tile.textContent = state.usedTiles.has(key) ? '' : `$${q.value.toLocaleString()}`;
+      tile.addEventListener('click', () => onTileClick(catIdx, row));
+      container.appendChild(tile);
+    });
+  }
+}
+
+function markTileUsed(catIdx, rowIdx) {
+  const key = `${catIdx}-${rowIdx}`;
+  state.usedTiles.add(key);
+  const tile = document.querySelector(`.tile[data-cat="${catIdx}"][data-row="${rowIdx}"]`);
+  if (tile) {
+    tile.classList.add('used');
+    tile.textContent = '';
+  }
+}
+
+function isBoardComplete() {
+  return state.usedTiles.size >= categories.length * 5;
+}
+
+// ── SCOREBOARD ─────────────────────────────────────────────────────────────
+function renderScoreboard() {
+  const container = document.getElementById('score-cards');
+  container.innerHTML = '';
+  state.players.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'score-card';
+    card.id = `score-card-${i}`;
+    const nameEl = document.createElement('div');
+    nameEl.className = 'score-name';
+    nameEl.textContent = p.name;
+    const scoreEl = document.createElement('div');
+    scoreEl.className = 'score-value' + (p.score < 0 ? ' negative' : '');
+    scoreEl.id = `score-val-${i}`;
+    scoreEl.textContent = (p.score < 0 ? '-$' : '$') + Math.abs(p.score).toLocaleString();
+    card.appendChild(nameEl);
+    card.appendChild(scoreEl);
+    container.appendChild(card);
+  });
+}
+
+function updateScoreDisplay(playerIdx) {
+  const p = state.players[playerIdx];
+  const el = document.getElementById(`score-val-${playerIdx}`);
+  if (!el) return;
+  el.className = 'score-value' + (p.score < 0 ? ' negative' : '');
+  el.textContent = (p.score < 0 ? '-$' : '$') + Math.abs(p.score).toLocaleString();
+  const card = document.getElementById(`score-card-${playerIdx}`);
+  if (card) {
+    card.classList.add('pulse');
+    setTimeout(() => card.classList.remove('pulse'), 500);
+  }
+}
+
+function adjustScore(playerIdx, delta) {
+  state.players[playerIdx].score += delta;
+  updateScoreDisplay(playerIdx);
+}
+
+// ── MODALS ─────────────────────────────────────────────────────────────────
+function showOnly(modalId) {
+  document.querySelectorAll('.modal').forEach(m => m.classList.remove('visible'));
+  document.getElementById('modal-overlay').classList.add('visible');
+  if (modalId) document.getElementById(modalId).classList.add('visible');
+}
+
+function hideAllModals() {
+  document.getElementById('modal-overlay').classList.remove('visible');
+  document.querySelectorAll('.modal').forEach(m => m.classList.remove('visible'));
+}
+
+// ── TILE CLICK ─────────────────────────────────────────────────────────────
+function onTileClick(catIdx, rowIdx) {
+  if (state.phase !== 'board') return;
+  const key = `${catIdx}-${rowIdx}`;
+  if (state.usedTiles.has(key)) return;
+
+  const cat = categories[catIdx];
+  const q = cat.questions[state.difficulty][rowIdx];
+  const isDailyDouble = key === state.dailyDoubleKey;
+
+  state.activeQuestion = { catIdx, rowIdx, value: q.value, q: q.q, a: q.a, isDailyDouble };
+
+  if (isDailyDouble) {
+    showDailyDoubleModal(catIdx, rowIdx);
+  } else {
+    showQuestionModal();
+  }
+}
+
+// ── DAILY DOUBLE ───────────────────────────────────────────────────────────
+function showDailyDoubleModal(catIdx, rowIdx) {
+  state.phase = 'dd';
+  const cat = categories[catIdx];
+  document.getElementById('dd-category').textContent = cat.name;
+  document.getElementById('dd-wager-input').value = 200;
+  showOnly('modal-daily-double');
+  playDailyDoubleSound();
+  setTimeout(() => document.getElementById('dd-wager-input').focus(), 100);
+}
+
+document.getElementById('btn-dd-show').addEventListener('click', () => {
+  showQuestionModal();
+});
+
+// ── QUESTION MODAL ─────────────────────────────────────────────────────────
+function showQuestionModal() {
+  state.phase = 'question';
+  const aq = state.activeQuestion;
+  const cat = categories[aq.catIdx];
+  const wager = aq.isDailyDouble
+    ? parseInt(document.getElementById('dd-wager-input').value || 0)
+    : aq.value;
+  state.activeQuestion.displayValue = wager;
+
+  document.getElementById('q-category').textContent = cat.name;
+  document.getElementById('q-value').textContent = `$${wager.toLocaleString()}`;
+  document.getElementById('q-clue').textContent = aq.q;
+  showOnly('modal-question');
+}
+
+document.getElementById('btn-reveal').addEventListener('click', showAnswerModal);
+
+// ── ANSWER MODAL ───────────────────────────────────────────────────────────
+function showAnswerModal() {
+  state.phase = 'answer';
+  const aq = state.activeQuestion;
+  const cat = categories[aq.catIdx];
+
+  document.getElementById('a-category').textContent = cat.name;
+  document.getElementById('a-value').textContent = `$${aq.displayValue.toLocaleString()}`;
+  document.getElementById('a-clue').textContent = aq.q;
+  const answerEl = document.getElementById('a-answer');
+  answerEl.textContent = aq.a;
+  answerEl.classList.remove('revealed');
+
+  // Build score buttons
+  const btnsContainer = document.getElementById('score-btns');
+  btnsContainer.innerHTML = '';
+  state.players.forEach((p, i) => {
+    const group = document.createElement('div');
+    group.className = 'score-btn-group';
+    const label = document.createElement('div');
+    label.className = 'score-btn-label';
+    label.textContent = p.name;
+    const row = document.createElement('div');
+    row.className = 'score-btn-row';
+    const plus = document.createElement('button');
+    plus.className = 'btn-score-plus';
+    plus.textContent = `+$${aq.displayValue.toLocaleString()}`;
+    plus.addEventListener('click', () => adjustScore(i, aq.displayValue));
+    const minus = document.createElement('button');
+    minus.className = 'btn-score-minus';
+    minus.textContent = `-$${aq.displayValue.toLocaleString()}`;
+    minus.addEventListener('click', () => adjustScore(i, -aq.displayValue));
+    row.appendChild(plus);
+    row.appendChild(minus);
+    group.appendChild(label);
+    group.appendChild(row);
+    btnsContainer.appendChild(group);
+  });
+
+  showOnly('modal-answer');
+  // Animate answer in after a short delay
+  setTimeout(() => answerEl.classList.add('revealed'), 80);
+}
+
+document.getElementById('btn-back').addEventListener('click', returnToBoard);
+document.getElementById('btn-reveal').addEventListener('click', () => {});
+
+function returnToBoard() {
+  if (!state.activeQuestion) return;
+  markTileUsed(state.activeQuestion.catIdx, state.activeQuestion.rowIdx);
+  state.activeQuestion = null;
+  hideAllModals();
+  state.phase = 'board';
+  if (isBoardComplete()) {
+    setTimeout(showFinalJeopardy, 400);
+  }
+}
+
+// ── FINAL JEOPARDY ─────────────────────────────────────────────────────────
+let activeFJ = null;
+
+function showFinalJeopardy() {
+  activeFJ = FINAL_JEOPARDY[Math.floor(Math.random() * FINAL_JEOPARDY.length)];
+  state.phase = 'fj-category';
+  document.getElementById('fj-cat-name').textContent = activeFJ.category;
+  showOnly('modal-fj-category');
+}
+
+document.getElementById('btn-fj-show-q').addEventListener('click', () => {
+  state.phase = 'fj-question';
+  document.getElementById('fj-q-category').textContent = activeFJ.category;
+  document.getElementById('fj-clue').textContent = activeFJ.q;
+  showOnly('modal-fj-question');
+});
+
+document.getElementById('btn-fj-reveal').addEventListener('click', () => {
+  state.phase = 'fj-answer';
+  document.getElementById('fj-a-category').textContent = activeFJ.category;
+  document.getElementById('fj-a-clue').textContent = activeFJ.q;
+  document.getElementById('fj-answer').textContent = activeFJ.a;
+
+  // Build per-team wager rows
+  const list = document.getElementById('fj-wager-list');
+  list.innerHTML = '';
+  state.players.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'fj-wager-row';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'fj-wager-name';
+    nameEl.textContent = p.name;
+
+    const wagerInput = document.createElement('input');
+    wagerInput.type = 'number';
+    wagerInput.className = 'fj-wager-input';
+    wagerInput.min = 0;
+    wagerInput.value = 0;
+    wagerInput.placeholder = '0';
+
+    const correctBtn = document.createElement('button');
+    correctBtn.className = 'btn-fj-correct';
+    correctBtn.textContent = 'Correct ✓';
+    correctBtn.addEventListener('click', () => {
+      const w = Math.max(0, parseInt(wagerInput.value) || 0);
+      adjustScore(i, w);
+      correctBtn.disabled = true;
+      wrongBtn.disabled = true;
+      wagerInput.disabled = true;
+    });
+
+    const wrongBtn = document.createElement('button');
+    wrongBtn.className = 'btn-fj-wrong';
+    wrongBtn.textContent = 'Wrong ✗';
+    wrongBtn.addEventListener('click', () => {
+      const w = Math.max(0, parseInt(wagerInput.value) || 0);
+      adjustScore(i, -w);
+      correctBtn.disabled = true;
+      wrongBtn.disabled = true;
+      wagerInput.disabled = true;
+    });
+
+    row.appendChild(nameEl);
+    row.appendChild(wagerInput);
+    row.appendChild(correctBtn);
+    row.appendChild(wrongBtn);
+    list.appendChild(row);
+  });
+
+  showOnly('modal-fj-answer');
+});
+
+document.getElementById('btn-fj-scores').addEventListener('click', showFinalScores);
+
+// ── FINAL SCORES ───────────────────────────────────────────────────────────
+function showFinalScores() {
+  state.phase = 'gameover';
+  const sorted = [...state.players].sort((a, b) => b.score - a.score);
+  const list = document.getElementById('final-scores-list');
+  list.innerHTML = '';
+  sorted.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'final-score-row' + (i === 0 ? ' winner' : '');
+    const rank = document.createElement('div');
+    rank.className = 'final-rank';
+    rank.textContent = i === 0 ? '🏆' : `${i + 1}.`;
+    const name = document.createElement('div');
+    name.className = 'final-name';
+    name.textContent = p.name;
+    const score = document.createElement('div');
+    score.className = 'final-score' + (p.score < 0 ? ' negative' : '');
+    score.textContent = (p.score < 0 ? '-$' : '$') + Math.abs(p.score).toLocaleString();
+    row.appendChild(rank);
+    row.appendChild(name);
+    row.appendChild(score);
+    list.appendChild(row);
+  });
+  showOnly('modal-final');
+}
+
+// ── DAILY DOUBLE INIT ──────────────────────────────────────────────────────
+function initDailyDouble() {
+  // Randomly place the Daily Double in rows 2-4 ($600-$1000), cats 1-4
+  const catRange = [1, 2, 3, 4];
+  const rowRange = [2, 3, 4];
+  const c = catRange[Math.floor(Math.random() * catRange.length)];
+  const r = rowRange[Math.floor(Math.random() * rowRange.length)];
+  state.dailyDoubleKey = `${c}-${r}`;
+}
+
+// ── SETUP MODAL ────────────────────────────────────────────────────────────
+const defaultNames = ['Team 1', 'Team 2', 'Team 3'];
+
+function buildPlayerInputs(names) {
+  const container = document.getElementById('player-inputs');
+  container.innerHTML = '';
+  names.forEach((name, i) => {
+    const row = document.createElement('div');
+    row.className = 'modal-player-row';
+    const label = document.createElement('label');
+    label.className = 'modal-player-label';
+    label.textContent = `Team ${i + 1}`;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = name;
+    input.placeholder = `Team ${i + 1}`;
+    input.maxLength = 20;
+    row.appendChild(label);
+    row.appendChild(input);
+    container.appendChild(row);
+  });
+}
+
+buildPlayerInputs(defaultNames);
+
+document.getElementById('btn-add-team').addEventListener('click', () => {
+  const inputs = document.querySelectorAll('#player-inputs input');
+  if (inputs.length >= 6) return;
+  const names = Array.from(inputs).map(i => i.value || i.placeholder);
+  names.push(`Team ${names.length + 1}`);
+  buildPlayerInputs(names);
+});
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  const inputs = document.querySelectorAll('#player-inputs input');
+  state.players = Array.from(inputs).map((inp, i) => ({
+    name: inp.value.trim() || `Team ${i + 1}`,
+    score: 0
+  }));
+  selectCategories();
+  initDailyDouble();
+  hideAllModals();
+  renderScoreboard();
+  buildBoard();
+  document.getElementById('btn-new-game').style.display = '';
+  state.phase = 'board';
+});
+
+// ── NEW GAME / RESET ───────────────────────────────────────────────────────
+function resetGame() {
+  state.usedTiles.clear();
+  state.activeQuestion = null;
+  state.players.forEach(p => p.score = 0);
+  selectCategories();
+  initDailyDouble();
+  hideAllModals();
+  renderScoreboard();
+  buildBoard();
+  state.phase = 'board';
+}
+
+// ── KEYBOARD SHORTCUTS ─────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' && state.phase === 'question') {
+    e.preventDefault();
+    showAnswerModal();
+  } else if (e.key === 'Escape') {
+    if (state.phase === 'question' || state.phase === 'answer' || state.phase === 'dd') {
+      returnToBoard();
+    }
+  } else if (e.key === 'Enter' && state.phase === 'dd') {
+    document.getElementById('btn-dd-show').click();
+  }
+});
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+// Show setup modal on load
+document.getElementById('modal-overlay').classList.add('visible');
+</script>
+</body>
+</html>

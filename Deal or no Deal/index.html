@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deal or No Deal</title>
+  <script src="cases.js"></script>
+  <style>
+    /* ── RESET & BASE ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a2e;
+      color: #fff;
+      font-family: 'Arial Black', Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── LAYOUT ── */
+    #game-container {
+      display: grid;
+      grid-template-rows: 56px 1fr;
+      height: 100vh;
+    }
+
+    /* ── TOP BAR ── */
+    #top-bar {
+      background: #06063a;
+      border-bottom: 3px solid #ffd700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      gap: 12px;
+    }
+    #top-bar h1 {
+      color: #ffd700;
+      font-size: 1.5rem;
+      letter-spacing: 4px;
+      text-shadow: 0 0 20px rgba(255,215,0,0.5);
+      white-space: nowrap;
+    }
+    #top-bar-center {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    #player-display { color: #aad4ff; font-size: 1rem; letter-spacing: 1px; }
+    #round-display  { color: #ffd700; font-size: 1rem; letter-spacing: 1px; }
+    #menu-btn {
+      background: transparent;
+      border: 1px solid #444;
+      color: #888;
+      padding: 4px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    #menu-btn:hover { color: #ccc; border-color: #888; }
+
+    /* ── MAIN AREA ── */
+    #main-area { display: flex; overflow: hidden; }
+
+    /* ── VALUES BOARD ── */
+    #values-board {
+      width: 148px;
+      min-width: 148px;
+      background: #06063a;
+      border-right: 2px solid #2a2a6e;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      overflow-y: auto;
+    }
+    #values-board::-webkit-scrollbar { width: 4px; }
+    #values-board::-webkit-scrollbar-track { background: #06063a; }
+    #values-board::-webkit-scrollbar-thumb { background: #2a2a6e; border-radius: 2px; }
+
+    .value-item {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      text-align: right;
+      font-weight: bold;
+      transition: all 0.4s;
+      border: 1px solid transparent;
+    }
+    .value-item.tier1 { color: #89cfff; border-color: #1a4a8a; background: #0a1a4a; }
+    .value-item.tier2 { color: #fffaaa; border-color: #5a5000; background: #1a1500; }
+    .value-item.tier3 { color: #ffb347; border-color: #6a3500; background: #2a1500; }
+    .value-item.tier4 { color: #ff7070; border-color: #8a1a1a; background: #2a0a0a; }
+    .value-item.eliminated {
+      color: #383838 !important;
+      border-color: #1e1e1e !important;
+      background: #111 !important;
+      text-decoration: line-through;
+    }
+
+    /* ── GAME AREA ── */
+    #game-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    /* ── CASES GRID ── */
+    #cases-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 580px;
+    }
+
+    .case-card {
+      aspect-ratio: 1;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      border: 2px solid #3a5a9a;
+      background: linear-gradient(150deg, #1e5ab8 0%, #0e2d66 100%);
+      padding: 6px;
+      position: relative;
+    }
+    .case-card:hover:not(.opened):not(.player-case):not(.value-revealed) {
+      transform: scale(1.06);
+      box-shadow: 0 0 22px rgba(100,160,255,0.55);
+      border-color: #6a9adf;
+    }
+    .case-card:active:not(.opened):not(.player-case):not(.value-revealed) {
+      transform: scale(0.96);
+    }
+    .case-card.opened {
+      background: #141422;
+      border-color: #2a2a3a;
+      cursor: default;
+    }
+    .case-card.player-case {
+      border: 3px solid #ffd700;
+      background: linear-gradient(150deg, #2660a8 0%, #143060 100%);
+      box-shadow: 0 0 18px rgba(255,215,0,0.35);
+      cursor: default;
+    }
+    .case-icon { font-size: 2rem; line-height: 1; }
+    .case-number { font-size: 1.4rem; font-weight: bold; color: #fff; }
+    .case-sublabel { font-size: 0.5rem; letter-spacing: 1px; color: #aad4ff; text-transform: uppercase; }
+    .case-card.player-case .case-sublabel { color: #ffd700; }
+    .case-opened-value { font-size: 0.72rem; font-weight: bold; }
+    .case-opened-value.tier1 { color: #89cfff; }
+    .case-opened-value.tier2 { color: #fffaaa; }
+    .case-opened-value.tier3 { color: #ffb347; }
+    .case-opened-value.tier4 { color: #ff7070; }
+
+    /* ── INTRO REVEAL ── */
+    .case-card.value-revealed {
+      background: linear-gradient(150deg, #0f3810 0%, #061808 100%);
+      border-color: #2a8a2a;
+      box-shadow: 0 0 12px rgba(50,200,50,0.25);
+      cursor: default;
+    }
+    .case-revealed-val { font-size: 0.68rem; font-weight: bold; margin-top: 2px; }
+    .case-revealed-val.tier1 { color: #89cfff; }
+    .case-revealed-val.tier2 { color: #fffaaa; }
+    .case-revealed-val.tier3 { color: #ffb347; }
+    .case-revealed-val.tier4 { color: #ff7070; }
+
+    /* ── ROUND INFO ── */
+    #round-info {
+      text-align: center;
+      padding: 10px 28px;
+      background: #12124a;
+      border-radius: 10px;
+      border: 2px solid #2a2a6e;
+    }
+    #round-info-text { font-size: 1.05rem; color: #aad4ff; letter-spacing: 1px; }
+    #round-info-text em { color: #ffd700; font-style: normal; font-size: 1.3rem; }
+
+    /* ── MODAL OVERLAY ── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.87);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #modal-overlay.visible { display: flex; }
+
+    .modal {
+      display: none;
+      background: #12124a;
+      border: 3px solid #ffd700;
+      border-radius: 16px;
+      padding: 32px 40px;
+      max-width: 520px;
+      width: 90%;
+      text-align: center;
+      flex-direction: column;
+      gap: 16px;
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+    .modal.visible { display: flex; }
+    .modal::-webkit-scrollbar { width: 4px; }
+    .modal::-webkit-scrollbar-thumb { background: #2a2a6e; border-radius: 2px; }
+
+    .modal h2 {
+      color: #ffd700;
+      font-size: 1.9rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .modal p { font-size: 1rem; color: #ccc; line-height: 1.5; }
+
+    .modal input[type="text"] {
+      background: #0a0a2e;
+      border: 2px solid #4a4aae;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1.2rem;
+      padding: 10px 14px;
+      width: 100%;
+      text-align: center;
+      font-family: inherit;
+    }
+    .modal input[type="text"]:focus { outline: none; border-color: #ffd700; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      background: #ffd700;
+      color: #0a0a2e;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 28px;
+      font-size: 1.1rem;
+      font-family: 'Arial Black', Arial, sans-serif;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.12s;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .btn:hover { transform: scale(1.04); background: #ffe84d; }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-secondary {
+      background: #12124a;
+      color: #aad4ff;
+      border: 2px solid #4a4aae;
+    }
+    .btn-secondary:hover { background: #1a1a6a; border-color: #aad4ff; color: #fff; }
+
+    .btn-deal {
+      background: #1a8c1a;
+      color: #fff;
+      font-size: 1.4rem;
+      padding: 15px 38px;
+      letter-spacing: 2px;
+    }
+    .btn-deal:hover { background: #22a822; }
+
+    .btn-nodeal {
+      background: #8c1a1a;
+      color: #fff;
+      font-size: 1.4rem;
+      padding: 15px 38px;
+      letter-spacing: 2px;
+    }
+    .btn-nodeal:hover { background: #aa2222; }
+
+    /* ── SETUP MODAL ── */
+    #player-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .player-input-row { display: flex; align-items: center; gap: 10px; }
+    .player-input-label {
+      color: #ffd700;
+      font-size: 0.85rem;
+      width: 68px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .btn-remove {
+      background: transparent;
+      border: 1px solid #8c1a1a;
+      color: #ff7070;
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+    .btn-remove:hover { background: #8c1a1a; }
+
+    /* ── PLAYER INTRO ── */
+    #player-intro-name {
+      font-size: 2.8rem;
+      color: #ffd700;
+      letter-spacing: 2px;
+      text-shadow: 0 0 28px rgba(255,215,0,0.65);
+    }
+
+    /* ── BANKER MODAL ── */
+    #banker-phone {
+      font-size: 3rem;
+      display: inline-block;
+      animation: phone-ring 0.4s ease-in-out infinite;
+    }
+    #banker-phone.still { animation: none; }
+    @keyframes phone-ring {
+      0%,100% { transform: rotate(-18deg); }
+      50%      { transform: rotate(18deg); }
+    }
+    #banker-offer-display {
+      font-size: 2.8rem;
+      color: #ffd700;
+      text-shadow: 0 0 20px rgba(255,215,0,0.55);
+    }
+    #offer-context { font-size: 0.85rem; color: #777; }
+    #deal-buttons { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── FINAL SWAP ── */
+    #swap-cases-row {
+      display: flex;
+      justify-content: center;
+      gap: 28px;
+      align-items: center;
+    }
+    .swap-case { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .swap-case-icon { font-size: 3rem; }
+    .swap-case-num { font-size: 1.3rem; font-weight: bold; color: #fff; }
+    .swap-case-label { font-size: 0.75rem; color: #aad4ff; letter-spacing: 1px; text-transform: uppercase; }
+    #swap-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── REVEAL MODAL ── */
+    #reveal-case-icon { font-size: 4rem; transition: transform 0.4s; }
+    #reveal-amount {
+      font-size: 3rem;
+      font-weight: bold;
+      text-shadow: 0 0 18px currentColor;
+      min-height: 3.5rem;
+    }
+    #reveal-amount.tier1 { color: #89cfff; }
+    #reveal-amount.tier2 { color: #fffaaa; }
+    #reveal-amount.tier3 { color: #ffb347; }
+    #reveal-amount.tier4 { color: #ff7070; }
+    #reveal-message { font-size: 0.95rem; color: #aaa; min-height: 1.4rem; }
+
+    /* ── LEADERBOARD ── */
+    .leaderboard { width: 100%; border-collapse: collapse; font-size: 1rem; }
+    .leaderboard th {
+      color: #ffd700;
+      border-bottom: 2px solid #ffd700;
+      padding: 6px 10px;
+      text-align: center;
+    }
+    .leaderboard td { padding: 6px 10px; text-align: center; border-bottom: 1px solid #2a2a6e; }
+    .leaderboard tr.top-row td { color: #ffd700; font-weight: bold; }
+
+    /* ── GAMEOVER ── */
+    #gameover-title { font-size: 2.5rem; color: #ffd700; }
+    #winner-display  { font-size: 1.3rem; color: #fff; }
+
+    /* ── CONFETTI CANVAS ── */
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 200;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti-canvas"></canvas>
+
+  <div id="game-container">
+    <!-- TOP BAR -->
+    <div id="top-bar">
+      <h1>DEAL OR NO DEAL</h1>
+      <div id="top-bar-center">
+        <span id="player-display"></span>
+        <span id="round-display"></span>
+      </div>
+      <button id="menu-btn" onclick="showSetupModal()">MENU</button>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div id="main-area">
+      <div id="values-board"></div>
+      <div id="game-area">
+        <div id="cases-grid"></div>
+        <div id="round-info">
+          <div id="round-info-text">Welcome to Deal or No Deal!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL OVERLAY -->
+  <div id="modal-overlay">
+
+    <!-- SETUP -->
+    <div id="modal-setup" class="modal">
+      <h2>Deal or No Deal</h2>
+      <p>Enter contestant names (1–8 players)</p>
+      <div id="player-list"></div>
+      <button class="btn btn-secondary" onclick="addPlayerInput()">+ Add Player</button>
+      <button class="btn" onclick="startGame()">START GAME SHOW</button>
+    </div>
+
+    <!-- PLAYER INTRO -->
+    <div id="modal-player-intro" class="modal">
+      <h2>Next Up...</h2>
+      <div id="player-intro-name"></div>
+      <p>Are you ready to play?</p>
+      <button class="btn" onclick="beginPlayerTurn()">LET'S GO!</button>
+    </div>
+
+    <!-- BANKER OFFER -->
+    <div id="modal-banker" class="modal">
+      <div><span id="banker-phone">📞</span></div>
+      <h2>The Banker</h2>
+      <p id="banker-message">The banker is calling...</p>
+      <div id="banker-offer-display"></div>
+      <div id="offer-context"></div>
+      <div id="deal-buttons" style="display:none">
+        <button class="btn btn-deal"   onclick="onDeal()">DEAL!</button>
+        <button class="btn btn-nodeal" onclick="onNoDeal()">NO DEAL!</button>
+      </div>
+    </div>
+
+    <!-- FINAL SWAP -->
+    <div id="modal-final-swap" class="modal">
+      <h2>Final Decision</h2>
+      <p>One case remains. Swap your case for it — or keep your original?</p>
+      <div id="swap-cases-row"></div>
+      <div id="swap-buttons">
+        <button class="btn" onclick="doSwap()">SWAP!</button>
+        <button class="btn btn-secondary" onclick="keepCase()">KEEP MINE</button>
+      </div>
+    </div>
+
+    <!-- REVEAL -->
+    <div id="modal-reveal" class="modal">
+      <h2 id="reveal-title">Your Case!</h2>
+      <div id="reveal-case-icon">💼</div>
+      <div id="reveal-amount"></div>
+      <p id="reveal-message"></p>
+      <button class="btn" id="reveal-continue-btn" style="display:none" onclick="showPlayerResult()">CONTINUE</button>
+    </div>
+
+    <!-- PLAYER RESULT -->
+    <div id="modal-player-result" class="modal">
+      <h2 id="result-name"></h2>
+      <div id="result-earned" style="font-size:2.5rem; color:#ffd700; margin: 2px 0;"></div>
+      <p id="result-deal-note" style="color:#aad4ff; font-size:0.9rem;"></p>
+      <table class="leaderboard" id="interim-leaderboard"></table>
+      <button class="btn" id="next-player-btn" onclick="nextPlayer()">NEXT PLAYER</button>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="modal-gameover" class="modal">
+      <div id="gameover-title">Game Over!</div>
+      <div id="winner-display"></div>
+      <table class="leaderboard" id="final-leaderboard"></table>
+      <button class="btn" onclick="showSetupModal()">PLAY AGAIN</button>
+    </div>
+
+  </div><!-- end modal-overlay -->
+
+  <script>
+    // ── STATE ──
+    const state = {
+      phase: 'setup',
+      players: [],
+      currentPlayerIdx: 0,
+      cases: [],
+      playerCaseId: null,
+      currentRound: 0,
+      roundsConfig: [5, 4, 3, 1, 1],
+      casesLeftThisRound: 0,
+      bankerOffer: 0,
+    };
+
+    // ── AUDIO ──
+    let audioCtx = null;
+    function getCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return audioCtx;
+    }
+    function tone(freq, startOffset, dur, type = 'sine', vol = 0.28) {
+      const ctx = getCtx();
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = type;
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + startOffset;
+      gain.gain.setValueAtTime(vol, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      osc.start(t);
+      osc.stop(t + dur + 0.05);
+    }
+    function playCaseOpen()     { tone(220, 0, 0.07, 'square', 0.18); tone(330, 0.05, 0.12, 'sine', 0.14); }
+    function playCaseSelected() { [523,659,784,1047].forEach((f,i) => tone(f, i*0.1, 0.22, 'sine', 0.3)); }
+    function playDeal()         { [392,523,659,784,1047,1319].forEach((f,i) => tone(f, i*0.09, 0.3, 'sine', 0.32)); }
+    function playNoDeal()       { [440,370,310,260].forEach((f,i) => tone(f, i*0.1, 0.18, 'sawtooth', 0.2)); }
+    function playRevealDrum()   { for(let i=0;i<8;i++) tone(100+i*12, i*0.075, 0.055, 'square', 0.18+i*0.02); }
+    function playRevealHit(big) {
+      if (big) { [262,330,392,523,659,784,1047].forEach((f,i) => tone(f, i*0.07, 0.45, 'sine', 0.38)); }
+      else      { tone(330, 0, 0.3, 'sine', 0.3); tone(262, 0.25, 0.5, 'sine', 0.2); }
+    }
+    let phoneTimer = null;
+    function playPhoneRing() {
+      tone(880, 0, 0.14, 'square', 0.22); tone(880, 0.18, 0.14, 'square', 0.22);
+      tone(660, 0.42, 0.14, 'square', 0.22); tone(660, 0.6, 0.14, 'square', 0.22);
+    }
+    function startPhoneRing() { playPhoneRing(); phoneTimer = setInterval(playPhoneRing, 1050); }
+    function stopPhoneRing()  { if (phoneTimer) { clearInterval(phoneTimer); phoneTimer = null; } }
+
+    // ── HELPERS ──
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function formatMoney(v) {
+      if (v < 1) return '$0.01';
+      return '$' + Math.round(v).toLocaleString('en-US');
+    }
+    function valueTier(v) {
+      if (v <= 25)     return 'tier1';
+      if (v <= 5000)   return 'tier2';
+      if (v <= 100000) return 'tier3';
+      return 'tier4';
+    }
+    function remainingValues() {
+      // Include the player's own case — the offer is based on ALL unknown values,
+      // including what might be in the player's briefcase.
+      return state.cases
+        .filter(c => !c.opened)
+        .map(c => c.value);
+    }
+    function calcOffer(vals, round) {
+      if (!vals.length) return 0;
+      const ev  = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const pct = [0.15, 0.25, 0.40, 0.60, 0.80][Math.min(round - 1, 4)];
+      return Math.round(ev * pct);
+    }
+
+    // ── MODAL HELPERS ──
+    function showModal(id) {
+      document.getElementById('modal-overlay').classList.add('visible');
+      document.querySelectorAll('.modal').forEach(m => m.classList.remove('visible'));
+      document.getElementById(id).classList.add('visible');
+    }
+    function hideModal() {
+      document.getElementById('modal-overlay').classList.remove('visible');
+      document.querySelectorAll('.modal').forEach(m => m.classList.remove('visible'));
+    }
+
+    // ── SETUP ──
+    let inputCount = 0;
+    function showSetupModal() {
+      stopPhoneRing();
+      state.phase = 'setup';
+      inputCount = 0;
+      document.getElementById('player-list').innerHTML = '';
+      addPlayerInput(); addPlayerInput();
+      showModal('modal-setup');
+    }
+    function addPlayerInput() {
+      if (inputCount >= 8) return;
+      inputCount++;
+      const n = inputCount;
+      const row = document.createElement('div');
+      row.className = 'player-input-row';
+      row.id = `pr-${n}`;
+      row.innerHTML =
+        `<span class="player-input-label">Player ${n}</span>` +
+        `<input type="text" id="pi-${n}" placeholder="Name..." maxlength="20" onkeydown="if(event.key==='Enter')startGame()">` +
+        (n > 1 ? `<button class="btn-remove" onclick="removePlayer(${n})">✕</button>` : '');
+      document.getElementById('player-list').appendChild(row);
+      document.getElementById(`pi-${n}`).focus();
+    }
+    function removePlayer(n) {
+      const row = document.getElementById(`pr-${n}`);
+      if (row) row.remove();
+    }
+    function startGame() {
+      const players = [];
+      for (let i = 1; i <= 8; i++) {
+        const el = document.getElementById(`pi-${i}`);
+        if (el && el.value.trim()) players.push({ name: el.value.trim(), earned: 0, dealAccepted: false });
+      }
+      if (!players.length) { alert('Enter at least one player name.'); return; }
+      state.players = players;
+      state.currentPlayerIdx = 0;
+      showPlayerIntro();
+    }
+
+    // ── PLAYER INTRO ──
+    function showPlayerIntro() {
+      document.getElementById('player-intro-name').textContent =
+        state.players[state.currentPlayerIdx].name.toUpperCase();
+      showModal('modal-player-intro');
+    }
+    function beginPlayerTurn() {
+      hideModal();
+      initPlayerGame();
+    }
+
+    // ── INIT PLAYER GAME ──
+    function initPlayerGame() {
+      state.phase = 'intro_reveal';
+      state.playerCaseId = null;
+      state.currentRound = 0;
+      state.casesLeftThisRound = 0;
+      state.bankerOffer = 0;
+      const vals = shuffle(CASE_VALUES);
+      state.cases = vals.map((v, i) => ({ id: i + 1, value: v, opened: false }));
+      updateTopBar();
+      renderValuesBoard();
+      renderGrid(true);  // show all values
+      setRoundInfo('Memorize the cases! Shuffling in <em>3</em>...');
+      runIntroAnimation();
+    }
+
+    // ── TOP BAR ──
+    function updateTopBar() {
+      const p = state.players[state.currentPlayerIdx];
+      document.getElementById('player-display').textContent = p ? `${p.name}` : '';
+      document.getElementById('round-display').textContent =
+        state.currentRound > 0 ? `Round ${state.currentRound} of ${state.roundsConfig.length}` : '';
+    }
+
+    // ── VALUES BOARD ──
+    function renderValuesBoard() {
+      const board = document.getElementById('values-board');
+      board.innerHTML = '';
+      const openedVals = new Set(state.cases.filter(c => c.opened).map(c => c.value));
+      [...CASE_VALUES].sort((a, b) => b - a).forEach(v => {
+        const el = document.createElement('div');
+        el.className = `value-item ${valueTier(v)}${openedVals.has(v) ? ' eliminated' : ''}`;
+        el.textContent = formatMoney(v);
+        board.appendChild(el);
+      });
+    }
+
+    // ── CASES GRID ──
+    // renderGrid(true)  → fresh render showing all values (intro reveal)
+    // renderGrid()      → in-place update preserving shuffled DOM order
+    function renderGrid(revealAll = false) {
+      const grid = document.getElementById('cases-grid');
+      if (revealAll || grid.children.length === 0) {
+        grid.innerHTML = '';
+        state.cases.forEach(c => {
+          const el = document.createElement('div');
+          el.className = 'case-card';
+          el.dataset.caseId = c.id;
+          if (revealAll) {
+            el.classList.add('value-revealed');
+            el.innerHTML =
+              `<div class="case-icon" style="opacity:0.3">💼</div>` +
+              `<div class="case-revealed-val ${valueTier(c.value)}">${formatMoney(c.value)}</div>`;
+          } else {
+            setCardContent(el, c);
+          }
+          grid.appendChild(el);
+        });
+      } else {
+        // In-place update — preserves shuffled DOM order from intro animation
+        const byId = Object.fromEntries(state.cases.map(c => [c.id, c]));
+        Array.from(grid.children).forEach(el => {
+          const c = byId[parseInt(el.dataset.caseId)];
+          if (c) setCardContent(el, c);
+        });
+      }
+    }
+
+    function setCardContent(el, c) {
+      el.className = 'case-card';
+      el.dataset.caseId = c.id;
+      el.onclick = null;
+      if (c.opened) {
+        el.classList.add('opened');
+        el.innerHTML =
+          `<div class="case-icon" style="opacity:0.35">💼</div>` +
+          `<div class="case-opened-value ${valueTier(c.value)}">${formatMoney(c.value)}</div>`;
+      } else if (c.id === state.playerCaseId) {
+        el.classList.add('player-case');
+        el.innerHTML =
+          `<div class="case-icon">💼</div>` +
+          `<div class="case-number">${c.id}</div>` +
+          `<div class="case-sublabel">Your Case</div>`;
+      } else {
+        el.innerHTML =
+          `<div class="case-icon">💼</div>` +
+          `<div class="case-number">${c.id}</div>` +
+          `<div class="case-sublabel">Case</div>`;
+        if (state.phase === 'select_case' || state.phase === 'open_cases') {
+          el.onclick = () => onCaseClick(c.id);
+        }
+      }
+    }
+
+    // ── CASE CLICK ──
+    function onCaseClick(id) {
+      if (state.phase === 'select_case') {
+        state.playerCaseId = id;
+        state.phase = 'open_cases';
+        state.currentRound = 1;
+        state.casesLeftThisRound = state.roundsConfig[0];
+        playCaseSelected();
+        renderGrid();
+        updateTopBar();
+        setRoundInfo();
+      } else if (state.phase === 'open_cases') {
+        const c = state.cases.find(c => c.id === id);
+        if (!c || c.opened || id === state.playerCaseId) return;
+        c.opened = true;
+        playCaseOpen();
+        state.casesLeftThisRound--;
+        renderGrid();
+        renderValuesBoard();
+        if (state.casesLeftThisRound === 0) {
+          setTimeout(showBankerOffer, 700);
+        } else {
+          setRoundInfo();
+        }
+      }
+    }
+
+    // ── ROUND INFO TEXT ──
+    function setRoundInfo(text) {
+      const el = document.getElementById('round-info-text');
+      if (text) { el.innerHTML = text; return; }
+      const n = state.casesLeftThisRound;
+      el.innerHTML =
+        `Round ${state.currentRound} of ${state.roundsConfig.length} — Open <em>${n}</em> more case${n !== 1 ? 's' : ''}`;
+    }
+
+    // ── BANKER OFFER ──
+    function showBankerOffer() {
+      const vals  = remainingValues();
+      state.bankerOffer = calcOffer(vals, state.currentRound);
+      const ev = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+
+      document.getElementById('banker-phone').classList.remove('still');
+      document.getElementById('banker-message').textContent = 'The banker is calling...';
+      document.getElementById('banker-offer-display').textContent = '';
+      document.getElementById('offer-context').textContent = '';
+      document.getElementById('deal-buttons').style.display = 'none';
+      showModal('modal-banker');
+      startPhoneRing();
+
+      setTimeout(() => {
+        stopPhoneRing();
+        document.getElementById('banker-phone').classList.add('still');
+        document.getElementById('banker-message').textContent = 'The banker offers you:';
+        document.getElementById('banker-offer-display').textContent = formatMoney(state.bankerOffer);
+        document.getElementById('offer-context').textContent =
+          `Expected value: ${formatMoney(Math.round(ev))}  •  ${vals.length} case${vals.length !== 1 ? 's' : ''} remaining`;
+        document.getElementById('deal-buttons').style.display = 'flex';
+      }, 2200);
+    }
+
+    function onDeal() {
+      stopPhoneRing();
+      playDeal();
+      const p = state.players[state.currentPlayerIdx];
+      p.earned = state.bankerOffer;
+      p.dealAccepted = true;
+      hideModal();
+      setTimeout(() => revealCase(true), 350);
+    }
+
+    function onNoDeal() {
+      stopPhoneRing();
+      playNoDeal();
+      hideModal();
+      if (state.currentRound >= state.roundsConfig.length) {
+        setTimeout(showFinalSwap, 400);
+      } else {
+        state.currentRound++;
+        state.casesLeftThisRound = state.roundsConfig[state.currentRound - 1];
+        updateTopBar();
+        setRoundInfo();
+        renderGrid();
+      }
+    }
+
+    // ── FINAL SWAP ──
+    function showFinalSwap() {
+      const last = state.cases.find(c => !c.opened && c.id !== state.playerCaseId);
+      document.getElementById('swap-cases-row').innerHTML =
+        `<div class="swap-case">` +
+          `<div class="swap-case-icon">💼</div>` +
+          `<div class="swap-case-num">#${state.playerCaseId}</div>` +
+          `<div class="swap-case-label">Your Case</div>` +
+        `</div>` +
+        `<div style="font-size:2rem;color:#ffd700;">⇄</div>` +
+        `<div class="swap-case">` +
+          `<div class="swap-case-icon">💼</div>` +
+          `<div class="swap-case-num">#${last.id}</div>` +
+          `<div class="swap-case-label">Last Case</div>` +
+        `</div>`;
+      showModal('modal-final-swap');
+    }
+    function doSwap() {
+      const last = state.cases.find(c => !c.opened && c.id !== state.playerCaseId);
+      // Mark old player case as opened so reveal shows it
+      state.cases.find(c => c.id === state.playerCaseId).opened = true;
+      state.playerCaseId = last.id;
+      hideModal();
+      revealCase(false);
+    }
+    function keepCase() {
+      hideModal();
+      revealCase(false);
+    }
+
+    // ── REVEAL ──
+    function revealCase(wasDeal) {
+      state.phase = 'reveal';
+      const playerCase = state.cases.find(c => c.id === state.playerCaseId);
+      const val = playerCase.value;
+      const p   = state.players[state.currentPlayerIdx];
+      if (!wasDeal) { p.earned = val; p.dealAccepted = false; }
+
+      document.getElementById('reveal-title').textContent   = wasDeal ? 'Your Case Contained...' : 'Your Case!';
+      document.getElementById('reveal-case-icon').textContent = '💼';
+      document.getElementById('reveal-amount').textContent  = '';
+      document.getElementById('reveal-amount').className    = 'reveal-amount';
+      document.getElementById('reveal-message').textContent = '';
+      document.getElementById('reveal-continue-btn').style.display = 'none';
+      showModal('modal-reveal');
+
+      playRevealDrum();
+      setTimeout(() => {
+        document.getElementById('reveal-case-icon').textContent = '📂';
+        const amtEl = document.getElementById('reveal-amount');
+        amtEl.textContent = formatMoney(val);
+        amtEl.className   = `reveal-amount ${valueTier(val)}`;
+
+        const isHigh = val >= 50000;
+        playRevealHit(isHigh);
+        if (isHigh) launchConfetti();
+
+        if (wasDeal) {
+          document.getElementById('reveal-message').textContent =
+            val > state.bankerOffer
+              ? `The banker got lucky — you had ${formatMoney(val)}! Deal was ${formatMoney(state.bankerOffer)}.`
+              : `Great deal! You had ${formatMoney(val)}. Deal was ${formatMoney(state.bankerOffer)}.`;
+        }
+        document.getElementById('reveal-continue-btn').style.display = 'block';
+      }, 900);
+    }
+
+    // ── PLAYER RESULT ──
+    function showPlayerResult() {
+      const p = state.players[state.currentPlayerIdx];
+      document.getElementById('result-name').textContent = `${p.name} walks away with`;
+      document.getElementById('result-earned').textContent = formatMoney(p.earned);
+      document.getElementById('result-deal-note').textContent =
+        p.dealAccepted ? '✅ Accepted the deal!' : '🎲 Played it to the end!';
+
+      const played  = state.players.slice(0, state.currentPlayerIdx + 1);
+      const sorted  = [...played].sort((a, b) => b.earned - a.earned);
+      const table   = document.getElementById('interim-leaderboard');
+      table.innerHTML = `<tr><th>#</th><th>Player</th><th>Earned</th></tr>`;
+      sorted.forEach((pl, i) => {
+        const tr = document.createElement('tr');
+        if (i === 0) tr.classList.add('top-row');
+        tr.innerHTML = `<td>${i+1}</td><td>${pl.name}</td><td>${formatMoney(pl.earned)}</td>`;
+        table.appendChild(tr);
+      });
+
+      const isLast = state.currentPlayerIdx >= state.players.length - 1;
+      document.getElementById('next-player-btn').textContent = isLast ? 'SEE FINAL RESULTS' : 'NEXT PLAYER';
+      showModal('modal-player-result');
+    }
+
+    function nextPlayer() {
+      state.currentPlayerIdx++;
+      if (state.currentPlayerIdx >= state.players.length) {
+        showGameover();
+      } else {
+        showPlayerIntro();
+      }
+    }
+
+    // ── GAMEOVER ──
+    function showGameover() {
+      const sorted = [...state.players].sort((a, b) => b.earned - a.earned);
+      const winner = sorted[0];
+      document.getElementById('winner-display').textContent =
+        `🏆 ${winner.name} wins with ${formatMoney(winner.earned)}!`;
+
+      const table = document.getElementById('final-leaderboard');
+      table.innerHTML = `<tr><th>#</th><th>Player</th><th>Earned</th><th>How?</th></tr>`;
+      sorted.forEach((p, i) => {
+        const tr = document.createElement('tr');
+        if (i === 0) tr.classList.add('top-row');
+        tr.innerHTML =
+          `<td>${i+1}</td><td>${p.name}</td><td>${formatMoney(p.earned)}</td>` +
+          `<td>${p.dealAccepted ? 'Deal ✅' : 'No Deal 🎲'}</td>`;
+        table.appendChild(tr);
+      });
+      showModal('modal-gameover');
+      setTimeout(launchConfetti, 300);
+    }
+
+    // ── CONFETTI ──
+    const ccv  = document.getElementById('confetti-canvas');
+    const cctx = ccv.getContext('2d');
+    let particles = [], animId = null;
+    const colors  = ['#ffd700','#ff6b6b','#89cfff','#98ff98','#ffb347','#ff69b4','#ffffff'];
+
+    function launchConfetti() {
+      ccv.width  = window.innerWidth;
+      ccv.height = window.innerHeight;
+      particles  = [];
+      for (let i = 0; i < 130; i++) {
+        particles.push({
+          x: Math.random() * ccv.width,
+          y: -10 - Math.random() * 40,
+          vx: (Math.random() - 0.5) * 4,
+          vy: Math.random() * 3 + 1.5,
+          rot: Math.random() * 360,
+          rotV: (Math.random() - 0.5) * 7,
+          w: Math.random() * 10 + 6,
+          h: Math.random() * 6 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          alpha: 1,
+        });
+      }
+      if (animId) cancelAnimationFrame(animId);
+      animConfetti();
+    }
+    function animConfetti() {
+      cctx.clearRect(0, 0, ccv.width, ccv.height);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
+        if (p.y > ccv.height * 0.65) p.alpha -= 0.018;
+        cctx.save();
+        cctx.globalAlpha = Math.max(0, p.alpha);
+        cctx.fillStyle   = p.color;
+        cctx.translate(p.x, p.y);
+        cctx.rotate(p.rot * Math.PI / 180);
+        cctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        cctx.restore();
+      });
+      particles = particles.filter(p => p.alpha > 0 && p.y < ccv.height + 20);
+      if (particles.length) animId = requestAnimationFrame(animConfetti);
+    }
+
+    // ── INTRO ANIMATION ──
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    function swapDOMElements(a, b) {
+      const temp = document.createTextNode('');
+      a.parentNode.insertBefore(temp, a);
+      b.parentNode.insertBefore(a, b);
+      temp.parentNode.insertBefore(b, temp);
+      temp.parentNode.removeChild(temp);
+    }
+
+    function playWhoosh() {
+      tone(350, 0, 0.10, 'sine', 0.10);
+      tone(260, 0.05, 0.08, 'sine', 0.07);
+    }
+
+    async function runIntroAnimation() {
+      // Countdown 3 → 1 while values are visible
+      for (let i = 2; i >= 1; i--) {
+        await sleep(1000);
+        setRoundInfo(`Memorize the cases! Shuffling in <em>${i}</em>...`);
+      }
+      await sleep(1000);
+      setRoundInfo('Now shuffling...');
+
+      // Shrink / fade cards closed
+      const grid = document.getElementById('cases-grid');
+      Array.from(grid.children).forEach(card => {
+        card.style.transition = 'transform 0.35s ease, opacity 0.35s ease';
+        card.style.transform  = 'scale(0.7)';
+        card.style.opacity    = '0.2';
+      });
+      await sleep(400);
+
+      // Restore each card as a blank closed briefcase — no number shown yet
+      Array.from(grid.children).forEach(card => {
+        card.style.transition = 'none';
+        card.style.transform  = '';
+        card.style.opacity    = '';
+        card.className        = 'case-card';
+        card.innerHTML        = `<div class="case-icon">💼</div>`;
+      });
+      await sleep(200);
+
+      // Shuffle: 20 fast animated DOM swaps (no numbers = impossible to track!)
+      await doShuffleAnimation();
+
+      // Reveal case numbers now that shuffling is done
+      Array.from(grid.children).forEach(card => {
+        const caseId = parseInt(card.dataset.caseId);
+        card.innerHTML =
+          `<div class="case-icon">💼</div>` +
+          `<div class="case-number">${caseId}</div>` +
+          `<div class="case-sublabel">Case</div>`;
+      });
+      await sleep(150);
+
+      // Enable case selection
+      state.phase = 'select_case';
+      Array.from(grid.children).forEach(card => {
+        const caseId = parseInt(card.dataset.caseId);
+        card.onclick = () => onCaseClick(caseId);
+      });
+      setRoundInfo('Pick your briefcase!');
+    }
+
+    async function doShuffleAnimation() {
+      const grid = document.getElementById('cases-grid');
+      for (let n = 0; n < 20; n++) {
+        const cards = Array.from(grid.children);
+        const i = Math.floor(Math.random() * cards.length);
+        let j   = Math.floor(Math.random() * cards.length);
+        while (j === i) j = Math.floor(Math.random() * cards.length);
+
+        const cardA = cards[i];
+        const cardB = cards[j];
+        const rectA = cardA.getBoundingClientRect();
+        const rectB = cardB.getBoundingClientRect();
+        const dx = rectB.left - rectA.left;
+        const dy = rectB.top  - rectA.top;
+
+        cardA.style.zIndex     = '10';
+        cardB.style.zIndex     = '5';
+        cardA.style.transition = 'transform 0.14s ease-in-out';
+        cardB.style.transition = 'transform 0.14s ease-in-out';
+        cardA.style.transform  = `translate(${dx}px,${dy}px)`;
+        cardB.style.transform  = `translate(${-dx}px,${-dy}px)`;
+        playWhoosh();
+
+        await sleep(155);
+
+        swapDOMElements(cardA, cardB);
+        cardA.style.transition = 'none';
+        cardB.style.transition = 'none';
+        cardA.style.transform  = '';
+        cardB.style.transform  = '';
+        cardA.style.zIndex     = '';
+        cardB.style.zIndex     = '';
+
+        await sleep(35);
+      }
+    }
+
+    // ── START ──
+    window.onload = () => showSetupModal();
+  </script>
+</body>
+</html>

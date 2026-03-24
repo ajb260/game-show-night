@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wheel of Fortune</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a2e;
+      color: #fff;
+      font-family: 'Arial Black', Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── MODAL OVERLAY ── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #modal-overlay.visible { display: flex; }
+
+    .modal {
+      display: none;
+      background: #12124a;
+      border: 3px solid #ffd700;
+      border-radius: 16px;
+      padding: 36px 44px;
+      max-width: 520px;
+      width: 90%;
+      text-align: center;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .modal.visible { display: flex; }
+
+    .modal h2 {
+      color: #ffd700;
+      font-size: 2rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .modal p { font-size: 1.1rem; color: #ccc; line-height: 1.5; }
+
+    .modal input[type="text"] {
+      background: #0a0a2e;
+      border: 2px solid #4a4aae;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1.3rem;
+      padding: 10px 14px;
+      width: 100%;
+      text-align: center;
+      font-family: inherit;
+    }
+    .modal input[type="text"]:focus {
+      outline: none;
+      border-color: #ffd700;
+    }
+
+    .modal-players { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .modal-player-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .modal-player-label {
+      font-size: 1rem;
+      color: #ffd700;
+      width: 80px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:hover:not(:disabled) { transform: scale(1.04); }
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-gold  { background: #ffd700; color: #0a0a2e; }
+    .btn-red   { background: #e63946; color: #fff; }
+    .btn-blue  { background: #2196f3; color: #fff; }
+    .btn-green { background: #43a047; color: #fff; }
+    .btn-gray  { background: #555; color: #fff; }
+
+
+    /* ── LAYOUT ── */
+    #game-container {
+      display: grid;
+      grid-template-rows: 56px 1fr 170px;
+      height: 100vh;
+    }
+
+    /* TOP BAR */
+    #top-bar {
+      background: #06063a;
+      border-bottom: 2px solid #ffd700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+    #top-bar h1 {
+      font-size: 1.5rem;
+      color: #ffd700;
+      letter-spacing: 3px;
+      text-shadow: 0 0 12px #ffd70088;
+    }
+    #round-indicator {
+      font-size: 1.1rem;
+      color: #aad4ff;
+      letter-spacing: 1px;
+    }
+    #turn-label {
+      font-size: 1rem;
+      color: #fff;
+      background: #1a1a6e;
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1px solid #4a4aae;
+    }
+    #turn-label span { color: #ffd700; font-weight: bold; }
+
+    /* PLAY AREA */
+    #play-area {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 12px;
+      padding: 10px 14px;
+      overflow: hidden;
+    }
+
+    /* WHEEL SECTION */
+    #wheel-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    #wheel-wrap {
+      position: relative;
+      width: 340px;
+      height: 340px;
+      flex-shrink: 0;
+    }
+    #wheel-canvas {
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      display: block;
+    }
+    #wheel-pointer {
+      position: absolute;
+      top: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-top: 28px solid #ffd700;
+      filter: drop-shadow(0 2px 4px #000);
+      z-index: 5;
+    }
+    #action-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    #action-buttons .btn { font-size: 0.9rem; padding: 10px 18px; }
+    #free-spin-badge {
+      display: none;
+      background: #43a047;
+      color: #fff;
+      font-size: 0.8rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+    }
+    #free-spin-badge.visible { display: inline-block; }
+
+    /* SCOREBOARD */
+    #scoreboard {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+    #scoreboard-title {
+      font-size: 0.85rem;
+      color: #aad4ff;
+      letter-spacing: 2px;
+      text-align: center;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #2a2a6e;
+    }
+    .player-card {
+      border: 2px solid #2a2a6e;
+      border-radius: 10px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+    }
+    .player-card.active {
+      border-color: #ffd700;
+      box-shadow: 0 0 14px #ffd70066;
+      background: #1e1e4e;
+    }
+    .player-card.active .player-name { color: #ffd700; }
+    .player-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #2a2a6e;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; font-weight: bold; flex-shrink: 0;
+    }
+    .player-card.active .player-num { background: #ffd700; color: #0a0a2e; }
+    .player-name { font-size: 1rem; font-weight: bold; flex: 1; }
+    .player-scores { text-align: right; font-size: 0.85rem; }
+    .player-round { color: #aad4ff; }
+    .player-total { color: #ffd700; font-weight: bold; font-size: 1rem; }
+    .free-spin-pip {
+      display: none;
+      background: #43a047;
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+    .free-spin-pip.visible { display: inline-block; }
+
+    /* BOTTOM AREA */
+    #bottom-area {
+      background: #06063a;
+      border-top: 2px solid #2a2a6e;
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 0;
+      padding: 8px 14px;
+      overflow: hidden;
+    }
+
+    /* PUZZLE BOARD */
+    #puzzle-board { display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+    #puzzle-category {
+      font-size: 0.85rem;
+      color: #aad4ff;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    #puzzle-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .puzzle-row {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 3px;
+      justify-content: center;
+    }
+    .letter-tile {
+      width: 40px; height: 52px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      border: 2px solid #3a3a8e;
+      border-radius: 4px;
+      background: #1a1a5e;
+      color: transparent;
+      transition: background 0.35s, color 0.35s, border-color 0.35s;
+      flex-shrink: 0;
+    }
+    .letter-tile.revealed {
+      background: #fff;
+      color: #0a0a2e;
+      border-color: #ffd700;
+    }
+    .letter-tile.space {
+      background: transparent;
+      border: none;
+      width: 14px;
+    }
+
+    /* USED LETTERS */
+    #used-letters {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-left: 14px;
+      border-left: 1px solid #2a2a6e;
+    }
+    #used-letters-title {
+      font-size: 0.75rem;
+      color: #aad4ff;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+    #alphabet-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .alpha-key {
+      width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: bold;
+      border: 1px solid #3a3a8e;
+      border-radius: 4px;
+      background: #1a1a5e;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s, border-color 0.2s;
+    }
+    .alpha-key:hover:not(.used):not(.disabled) { background: #2a2a8e; border-color: #ffd700; }
+    .alpha-key.used { background: #0a0a2e; color: #333; border-color: #1a1a3e; cursor: default; }
+    .alpha-key.vowel { border-color: #2196f3; }
+    .alpha-key.consonant-active { border-color: #ffd700; }
+    .alpha-key.vowel-active { border-color: #2196f3; background: #0d3060; }
+    .alpha-key.disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+
+    /* LETTER INPUT MODAL */
+    #modal-letter-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      width: 100%;
+    }
+    .modal-alpha-key {
+      height: 52px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; font-weight: bold;
+      border: 2px solid #3a3a8e;
+      border-radius: 8px;
+      background: #1a1a5e;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, opacity 0.2s;
+    }
+    .modal-alpha-key:hover:not(.used):not(.disabled-key) { background: #2a2a8e; border-color: #ffd700; }
+    .modal-alpha-key.vowel-key { border-color: #2196f3; color: #aad4ff; }
+    .modal-alpha-key.vowel-key:hover:not(.used):not(.disabled-key) { background: #0d3060; border-color: #2196f3; }
+    .modal-alpha-key.used { background: #0a0a2e; color: #333; border-color: #1a1a3e; cursor: default; }
+    .modal-alpha-key.disabled-key { opacity: 0.25; cursor: default; pointer-events: none; }
+
+    /* SPIN RESULT */
+    #spin-result-amount {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #ffd700;
+      text-shadow: 0 0 20px #ffd70099;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     MODALS
+═══════════════════════════════════════════════════ -->
+<div id="modal-overlay">
+
+  <!-- SETUP -->
+  <div class="modal visible" id="modal-setup">
+    <h2>Wheel of Fortune</h2>
+    <p>Enter player names to begin</p>
+    <div class="modal-players">
+      <div class="modal-player-row">
+        <span class="modal-player-label">Player 1</span>
+        <input type="text" id="name-0" placeholder="Player 1" maxlength="16">
+      </div>
+      <div class="modal-player-row">
+        <span class="modal-player-label">Player 2</span>
+        <input type="text" id="name-1" placeholder="Player 2" maxlength="16">
+      </div>
+      <div class="modal-player-row">
+        <span class="modal-player-label">Player 3</span>
+        <input type="text" id="name-2" placeholder="Player 3" maxlength="16">
+      </div>
+      <div class="modal-player-row">
+        <span class="modal-player-label">Player 4</span>
+        <input type="text" id="name-3" placeholder="Player 4" maxlength="16">
+      </div>
+    </div>
+    <button class="btn btn-gold" id="btn-start-game">Start Game</button>
+  </div>
+
+  <!-- SPIN RESULT -->
+  <div class="modal" id="modal-spin-result">
+    <h2 id="spin-result-heading">You Spun</h2>
+    <div id="spin-result-amount"></div>
+    <p id="spin-result-sub"></p>
+    <button class="btn btn-gold" id="btn-spin-result-ok">OK</button>
+  </div>
+
+  <!-- GUESS LETTER -->
+  <div class="modal" id="modal-guess">
+    <h2 id="guess-heading">Guess a Consonant</h2>
+    <p id="guess-sub"></p>
+    <div id="modal-letter-grid"></div>
+    <button class="btn btn-gray" id="btn-guess-cancel">Cancel</button>
+  </div>
+
+  <!-- SOLVE PUZZLE -->
+  <div class="modal" id="modal-solve">
+    <h2>Solve the Puzzle</h2>
+    <p id="solve-player-name"></p>
+    <input type="text" id="solve-input" placeholder="Type the answer..." maxlength="60" autocomplete="off">
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button class="btn btn-green" id="btn-solve-submit">Submit</button>
+      <button class="btn btn-gray" id="btn-solve-cancel">Cancel</button>
+    </div>
+  </div>
+
+  <!-- USE FREE SPIN -->
+  <div class="modal" id="modal-freespin-use">
+    <h2>Use Free Spin?</h2>
+    <p id="freespin-use-player"></p>
+    <p>You have a Free Spin token. Use it to keep your turn instead of losing it?</p>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button class="btn btn-green" id="btn-freespin-yes">Yes, Use It!</button>
+      <button class="btn btn-gray" id="btn-freespin-no">No, Pass Turn</button>
+    </div>
+  </div>
+
+  <!-- GUESS RESULT -->
+  <div class="modal" id="modal-guess-result">
+    <h2 id="guess-result-heading"></h2>
+    <p id="guess-result-body" style="font-size:1.3rem;font-weight:bold;"></p>
+    <p id="guess-result-sub" style="color:#ccc;"></p>
+    <button class="btn btn-gold" id="btn-guess-result-ok">OK</button>
+  </div>
+
+  <!-- ROUND END -->
+  <div class="modal" id="modal-round-end">
+    <h2 id="round-end-heading">Round Complete!</h2>
+    <p id="round-end-winner"></p>
+    <div id="round-end-scores" style="width:100%;margin:4px 0;"></div>
+    <button class="btn btn-gold" id="btn-next-round">Next Round</button>
+  </div>
+
+  <!-- GAME END -->
+  <div class="modal" id="modal-game-end" style="max-width:580px;">
+    <h2 id="game-end-title" style="font-size:2rem;letter-spacing:4px;text-shadow:0 0 24px #ffd700aa;">🏆 WINNER! 🏆</h2>
+    <p id="game-end-champion" style="font-size:2.2rem;color:#ffd700;font-weight:bold;text-shadow:0 0 20px #ffd70099;margin:4px 0;"></p>
+    <p id="game-end-amount" style="font-size:1.1rem;color:#aad4ff;margin-bottom:8px;"></p>
+    <div id="game-end-scores" style="width:100%;margin:4px 0;"></div>
+    <p style="color:#aad4ff;font-size:1rem;margin-top:12px;">Would you like to play again?</p>
+    <div style="display:flex;gap:14px;justify-content:center;margin-top:4px;">
+      <button class="btn btn-gold"  id="btn-play-again">Yes, Play Again!</button>
+      <button class="btn btn-gray"  id="btn-no-thanks">No Thanks</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     GAME UI
+═══════════════════════════════════════════════════ -->
+<div id="game-container">
+
+  <!-- TOP BAR -->
+  <header id="top-bar">
+    <h1>Wheel of Fortune</h1>
+    <span id="round-indicator">Round 1 of 3</span>
+    <span id="turn-label"><span id="turn-player-name">—</span>'s Turn</span>
+  </header>
+
+  <!-- PLAY AREA -->
+  <div id="play-area">
+
+    <!-- LEFT: WHEEL -->
+    <div id="wheel-section">
+      <div id="wheel-wrap">
+        <canvas id="wheel-canvas"></canvas>
+        <div id="wheel-pointer"></div>
+      </div>
+      <div id="action-buttons">
+        <button class="btn btn-red"   id="btn-spin">SPIN</button>
+        <button class="btn btn-blue"  id="btn-buy-vowel">BUY VOWEL ($250)</button>
+        <button class="btn btn-green" id="btn-solve-puzzle">SOLVE</button>
+      </div>
+      <div id="free-spin-badge">FREE SPIN READY</div>
+    </div>
+
+    <!-- RIGHT: SCOREBOARD -->
+    <div id="scoreboard">
+      <div id="scoreboard-title">SCOREBOARD</div>
+      <!-- Player cards injected by JS -->
+    </div>
+
+  </div>
+
+  <!-- BOTTOM AREA -->
+  <div id="bottom-area">
+
+    <!-- PUZZLE BOARD -->
+    <div id="puzzle-board">
+      <div id="puzzle-category">CATEGORY</div>
+      <div id="puzzle-rows"></div>
+    </div>
+
+    <!-- USED LETTERS -->
+    <div id="used-letters">
+      <div id="used-letters-title">USED LETTERS</div>
+      <div id="alphabet-grid"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Confetti canvas — sits above everything, pointer-events off so clicks still work -->
+<canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:150;pointer-events:none;display:none;"></canvas>
+
+<!-- Load puzzle bank first -->
+<script src="puzzles.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  WHEEL DATA
+// ══════════════════════════════════════════════════════════════════
+const WHEEL_WEDGES = [
+  { label: '$500',     value: 500,        color: '#c0392b' },
+  { label: '$900',     value: 900,        color: '#6c3483' },
+  { label: 'BANKRUPT', value: 'BANKRUPT', color: '#1c1c1c' },
+  { label: '$300',     value: 300,        color: '#1e8449' },
+  { label: '$700',     value: 700,        color: '#1a5276' },
+  { label: 'LOSE TURN',value: 'LOSE_TURN',color: '#922b21' },
+  { label: '$800',     value: 800,        color: '#117a65' },
+  { label: '$2500',    value: 2500,       color: '#f39c12' },
+  { label: 'BANKRUPT', value: 'BANKRUPT', color: '#1c1c1c' },
+  { label: '$400',     value: 400,        color: '#6e2f8b' },
+  { label: 'FREE SPIN',value: 'FREE_SPIN',color: '#27ae60' },
+  { label: '$600',     value: 600,        color: '#d35400' },
+  { label: '$3500',    value: 3500,       color: '#b7950b' },
+  { label: '$250',     value: 250,        color: '#6c3483' },
+  { label: '$1000',    value: 1000,       color: '#922b21' },
+  { label: '$500',     value: 500,        color: '#117a65' },
+];
+
+const VOWELS = new Set(['A','E','I','O','U']);
+const NUM_ROUNDS = 3;
+
+// ══════════════════════════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════════════════════════
+const GS = {
+  players: [],            // { name, roundEarnings, totalScore, hasFreeSpin }
+  currentRound: 0,
+  currentPlayerIndex: 0,
+  currentPuzzle: null,    // { category, puzzle }
+  usedPuzzleIndices: new Set(),
+  revealedLetters: new Set(),
+  lastSpinValue: null,
+  turnPhase: 'SPIN',      // 'SPIN' | 'GUESS' | 'BUY_VOWEL' | 'WAITING'
+  wheelAngle: 0,
+  wheelSpinning: false,
+  wheelAnimId: null,
+};
+
+// ══════════════════════════════════════════════════════════════════
+//  CANVAS SETUP
+// ══════════════════════════════════════════════════════════════════
+let CTX, CANVAS_SIZE = 340;
+
+function setupCanvas() {
+  const canvas = document.getElementById('wheel-canvas');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = CANVAS_SIZE * dpr;
+  canvas.height = CANVAS_SIZE * dpr;
+  canvas.style.width  = CANVAS_SIZE + 'px';
+  canvas.style.height = CANVAS_SIZE + 'px';
+  CTX = canvas.getContext('2d');
+  CTX.scale(dpr, dpr);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SOUND ENGINE (Web Audio API — no files needed)
+// ══════════════════════════════════════════════════════════════════
+let _audioCtx = null;
+function getAudio() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // Resume if suspended (browser autoplay policy)
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+// Short mechanical tick — pitch and volume scale with wheel speed (0=stopped, 1=fast)
+function playTick(speed) {
+  try {
+    const ctx = getAudio();
+    const t   = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600 + speed * 500, t);   // 600–1100 Hz
+    gain.gain.setValueAtTime(0.25 * (0.4 + speed * 0.6), t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    osc.start(t);
+    osc.stop(t + 0.04);
+  } catch(e) {}
+}
+
+// Pleasant two-tone bell for a correct letter
+function playDing() {
+  try {
+    const ctx = getAudio();
+    [880, 1320].forEach((freq, i) => {
+      const t   = ctx.currentTime + i * 0.08;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.4, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+      osc.start(t);
+      osc.stop(t + 0.7);
+    });
+  } catch(e) {}
+}
+
+// Descending buzz for a wrong letter
+function playBuzz() {
+  try {
+    const ctx = getAudio();
+    const t   = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.exponentialRampToValueAtTime(80, t + 0.45);
+    gain.gain.setValueAtTime(0.35, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+    osc.start(t);
+    osc.stop(t + 0.45);
+  } catch(e) {}
+}
+
+// Ascending fanfare for the game winner
+function playFanfare() {
+  try {
+    const ctx = getAudio();
+    const notes = [523, 659, 784, 659, 784, 1047]; // C E G E G C (triumphant)
+    notes.forEach((freq, i) => {
+      const t = ctx.currentTime + i * 0.13;
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.45, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      osc.start(t);
+      osc.stop(t + 0.5);
+    });
+  } catch(e) {}
+}
+
+// ── Confetti ──
+let _confettiAnimId = null;
+
+function startConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+  const ctx2 = canvas.getContext('2d');
+  const colors = ['#ffd700','#e63946','#2196f3','#43a047','#ff9800','#e91e63','#9c27b0','#fff'];
+
+  const particles = Array.from({length: 160}, () => ({
+    x:  Math.random() * canvas.width,
+    y:  Math.random() * -canvas.height * 0.5,   // start above screen
+    w:  7 + Math.random() * 9,
+    h:  4 + Math.random() * 5,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    vx: (Math.random() - 0.5) * 3,
+    vy: 2.5 + Math.random() * 4,
+    rot: Math.random() * Math.PI * 2,
+    rotV: (Math.random() - 0.5) * 0.18,
+    alpha: 1,
+  }));
+
+  const startTime = performance.now();
+
+  function draw(now) {
+    const elapsed = now - startTime;
+    ctx2.clearRect(0, 0, canvas.width, canvas.height);
+
+    // After 5 s start fading out
+    const fade = elapsed < 5000 ? 1 : Math.max(0, 1 - (elapsed - 5000) / 1200);
+
+    particles.forEach(p => {
+      p.x   += p.vx;
+      p.y   += p.vy;
+      p.rot += p.rotV;
+      if (p.y > canvas.height + 20) {
+        // Only recycle during the active phase
+        if (elapsed < 5000) {
+          p.y = -16;
+          p.x = Math.random() * canvas.width;
+        }
+      }
+      ctx2.save();
+      ctx2.globalAlpha = fade;
+      ctx2.translate(p.x, p.y);
+      ctx2.rotate(p.rot);
+      ctx2.fillStyle = p.color;
+      ctx2.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx2.restore();
+    });
+
+    if (fade > 0) {
+      _confettiAnimId = requestAnimationFrame(draw);
+    } else {
+      canvas.style.display = 'none';
+    }
+  }
+  _confettiAnimId = requestAnimationFrame(draw);
+}
+
+function stopConfetti() {
+  if (_confettiAnimId) { cancelAnimationFrame(_confettiAnimId); _confettiAnimId = null; }
+  const canvas = document.getElementById('confetti-canvas');
+  canvas.style.display = 'none';
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// Called each animation frame to tick as wedge boundaries are crossed
+function tickWheelSound(prevAngle, newAngle, speed) {
+  const wAngle = (2 * Math.PI) / WHEEL_WEDGES.length;
+  const crossings = Math.floor(newAngle / wAngle) - Math.floor(prevAngle / wAngle);
+  // Cap at 2 ticks per frame to avoid audio overload at high speed
+  const ticks = Math.min(crossings, 2);
+  for (let i = 0; i < ticks; i++) playTick(speed);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  WHEEL DRAWING
+// ══════════════════════════════════════════════════════════════════
+function drawWheel(angle) {
+  const cx = CANVAS_SIZE / 2, cy = CANVAS_SIZE / 2;
+  const radius = cx - 4;
+  const n = WHEEL_WEDGES.length;
+  const wedgeAngle = (2 * Math.PI) / n;
+
+  CTX.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+  // Outer ring shadow
+  CTX.save();
+  CTX.shadowColor = '#ffd700';
+  CTX.shadowBlur = 16;
+  CTX.beginPath();
+  CTX.arc(cx, cy, radius + 2, 0, 2 * Math.PI);
+  CTX.strokeStyle = '#ffd700';
+  CTX.lineWidth = 3;
+  CTX.stroke();
+  CTX.restore();
+
+  WHEEL_WEDGES.forEach((wedge, i) => {
+    const start = angle + i * wedgeAngle;
+    const end   = start + wedgeAngle;
+
+    // Fill wedge
+    CTX.beginPath();
+    CTX.moveTo(cx, cy);
+    CTX.arc(cx, cy, radius, start, end);
+    CTX.closePath();
+    CTX.fillStyle = wedge.color;
+    CTX.fill();
+    CTX.strokeStyle = 'rgba(255,255,255,0.18)';
+    CTX.lineWidth = 1.5;
+    CTX.stroke();
+
+    // Label text
+    CTX.save();
+    CTX.translate(cx, cy);
+    CTX.rotate(start + wedgeAngle / 2);
+    CTX.textAlign = 'right';
+    const isSpecial = typeof wedge.value === 'string';
+    CTX.font = isSpecial ? 'bold 13px Arial' : 'bold 15px Arial';
+    CTX.fillStyle = '#fff';
+    CTX.shadowColor = '#000';
+    CTX.shadowBlur = 4;
+    CTX.fillText(wedge.label, radius - 6, 4);
+    CTX.restore();
+  });
+
+  // Center hub
+  CTX.beginPath();
+  CTX.arc(cx, cy, 22, 0, 2 * Math.PI);
+  CTX.fillStyle = '#ffd700';
+  CTX.fill();
+  CTX.strokeStyle = '#fff';
+  CTX.lineWidth = 3;
+  CTX.stroke();
+
+  // WOF star in center
+  CTX.save();
+  CTX.font = 'bold 14px Arial';
+  CTX.fillStyle = '#0a0a2e';
+  CTX.textAlign = 'center';
+  CTX.textBaseline = 'middle';
+  CTX.fillText('★', cx, cy);
+  CTX.restore();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SPIN ANIMATION
+// ══════════════════════════════════════════════════════════════════
+function spinWheel() {
+  if (GS.wheelSpinning || GS.turnPhase !== 'SPIN') return;
+
+  const targetIndex = Math.floor(Math.random() * WHEEL_WEDGES.length);
+  const n = WHEEL_WEDGES.length;
+  const wedgeAngle = (2 * Math.PI) / n;
+
+  // Pointer is at top (−π/2 in canvas coords).
+  // Wedge i center angle (from angle=0): (i + 0.5) * wedgeAngle
+  // We want: currentAngle + (i + 0.5) * wedgeAngle ≡ −π/2  (mod 2π)
+  // => offset from current: (−π/2 − (i+0.5)*wedgeAngle) − (currentAngle mod 2π)
+  const currentMod = GS.wheelAngle % (2 * Math.PI);
+  const wedgeCenter = (targetIndex + 0.5) * wedgeAngle;
+  let delta = (-Math.PI / 2 - wedgeCenter) - currentMod;
+  // Normalize delta to [0, 2π)
+  delta = ((delta % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  if (delta < 0.1) delta += 2 * Math.PI;
+
+  const fullSpins = (5 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
+  const totalDelta = fullSpins + delta;
+  const startAngle = GS.wheelAngle;
+  const endAngle   = startAngle + totalDelta;
+  const duration   = 3200 + Math.random() * 1400; // 3.2–4.6 s
+  const startTime  = performance.now();
+
+  GS.wheelSpinning = true;
+  GS.turnPhase = 'WAITING';
+  disableAllButtons();
+
+  function animate(now) {
+    const elapsed  = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease-out quartic — decelerates more gradually at the end
+    const eased = 1 - Math.pow(1 - progress, 4);
+    const prevAngle = GS.wheelAngle;
+    GS.wheelAngle = startAngle + totalDelta * eased;
+    drawWheel(GS.wheelAngle);
+    tickWheelSound(prevAngle, GS.wheelAngle, 1 - progress);
+
+    if (progress < 1) {
+      GS.wheelAnimId = requestAnimationFrame(animate);
+    } else {
+      GS.wheelAngle    = endAngle;
+      GS.wheelSpinning = false;
+      handleSpinResult(WHEEL_WEDGES[targetIndex]);
+    }
+  }
+  GS.wheelAnimId = requestAnimationFrame(animate);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SPIN RESULT HANDLER
+// ══════════════════════════════════════════════════════════════════
+function handleSpinResult(wedge) {
+  const player = GS.players[GS.currentPlayerIndex];
+
+  if (wedge.value === 'BANKRUPT') {
+    showSpinResultModal('BANKRUPT', '#e63946',
+      player.name + ' goes BANKRUPT!', 'Loses all round earnings. Turn passes.',
+      () => {
+        player.roundEarnings = 0;
+        updateScoreboard();
+        advanceToNextPlayer();
+      }
+    );
+  } else if (wedge.value === 'LOSE_TURN') {
+    if (player.hasFreeSpin) {
+      showFreeSpinUseModal(player, () => {
+        // Use free spin — keep turn, guess a consonant at $0
+        player.hasFreeSpin = false;
+        updateFreespinBadge();
+        GS.lastSpinValue = 0;
+        GS.turnPhase = 'GUESS';
+        openGuessModal(false);
+      }, () => {
+        // Decline — pass turn
+        player.hasFreeSpin = false;
+        updateFreespinBadge();
+        updateScoreboard();
+        advanceToNextPlayer();
+      });
+    } else {
+      showSpinResultModal('LOSE A TURN', '#ff9800',
+        player.name + ' loses a turn!', 'Turn passes. Round earnings are kept.',
+        () => advanceToNextPlayer()
+      );
+    }
+  } else if (wedge.value === 'FREE_SPIN') {
+    player.hasFreeSpin = true;
+    updateFreespinBadge();
+    showSpinResultModal('FREE SPIN!', '#43a047',
+      player.name + ' gets a Free Spin token!', 'You can use it on a future turn to avoid losing your turn. Now guess a consonant!',
+      () => {
+        GS.lastSpinValue = 0;
+        GS.turnPhase = 'GUESS';
+        openGuessModal(false);
+      }
+    );
+  } else {
+    GS.lastSpinValue = wedge.value;
+    showSpinResultModal('$' + wedge.value.toLocaleString(), '#ffd700',
+      player.name + ' spun $' + wedge.value.toLocaleString() + '!', 'Guess a consonant.',
+      () => {
+        GS.turnPhase = 'GUESS';
+        openGuessModal(false);
+      }
+    );
+  }
+}
+
+function showSpinResultModal(heading, headingColor, body, sub, onOk) {
+  document.getElementById('spin-result-heading').textContent = heading;
+  document.getElementById('spin-result-heading').style.color = headingColor;
+  document.getElementById('spin-result-amount').textContent = '';
+  document.getElementById('spin-result-sub').textContent = sub;
+  // Use the body as the amount display
+  document.getElementById('spin-result-amount').textContent = body;
+  document.getElementById('spin-result-amount').style.fontSize = '1.6rem';
+  document.getElementById('spin-result-amount').style.color = headingColor;
+
+  const btn = document.getElementById('btn-spin-result-ok');
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  newBtn.addEventListener('click', () => { hideModal('modal-spin-result'); onOk(); });
+
+  showModal('modal-spin-result');
+}
+
+function showFreeSpinUseModal(player, onYes, onNo) {
+  document.getElementById('freespin-use-player').textContent = player.name + ' has a Free Spin token!';
+  const yesBtn = document.getElementById('btn-freespin-yes');
+  const noBtn  = document.getElementById('btn-freespin-no');
+  const newYes = yesBtn.cloneNode(true);
+  const newNo  = noBtn.cloneNode(true);
+  yesBtn.parentNode.replaceChild(newYes, yesBtn);
+  noBtn.parentNode.replaceChild(newNo, noBtn);
+  newYes.addEventListener('click', () => { hideModal('modal-freespin-use'); onYes(); });
+  newNo.addEventListener('click',  () => { hideModal('modal-freespin-use'); onNo(); });
+  showModal('modal-freespin-use');
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  GUESS LETTER MODAL
+// ══════════════════════════════════════════════════════════════════
+function openGuessModal(vowelMode) {
+  const player = GS.players[GS.currentPlayerIndex];
+  const heading = vowelMode ? 'Buy a Vowel' : 'Guess a Consonant';
+  const sub = vowelMode
+    ? player.name + ' — choose a vowel ($250 deducted)'
+    : (GS.lastSpinValue > 0
+        ? player.name + ' — worth $' + GS.lastSpinValue.toLocaleString() + ' per letter'
+        : player.name + ' — guess a consonant (Free Spin turn)');
+
+  document.getElementById('guess-heading').textContent = heading;
+  document.getElementById('guess-sub').textContent = sub;
+
+  const grid = document.getElementById('modal-letter-grid');
+  grid.innerHTML = '';
+
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter => {
+    const isVowel = VOWELS.has(letter);
+    const used    = GS.revealedLetters.has(letter);
+
+    const el = document.createElement('div');
+    el.className = 'modal-alpha-key' + (isVowel ? ' vowel-key' : '');
+    el.textContent = letter;
+
+    if (used) {
+      el.classList.add('used');
+    } else if (vowelMode && !isVowel) {
+      el.classList.add('disabled-key');
+    } else if (!vowelMode && isVowel) {
+      el.classList.add('disabled-key');
+    } else {
+      el.addEventListener('click', () => {
+        hideModal('modal-guess');
+        if (vowelMode) handleVowelGuess(letter);
+        else           handleConsonantGuess(letter);
+      });
+    }
+    grid.appendChild(el);
+  });
+
+  const cancelBtn = document.getElementById('btn-guess-cancel');
+  const newCancel = cancelBtn.cloneNode(true);
+  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+  newCancel.addEventListener('click', () => {
+    hideModal('modal-guess');
+    GS.turnPhase = 'SPIN';
+    enableTurnButtons();
+  });
+
+  showModal('modal-guess');
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  CONSONANT / VOWEL GUESS LOGIC
+// ══════════════════════════════════════════════════════════════════
+function handleConsonantGuess(letter) {
+  GS.revealedLetters.add(letter);
+  const count = revealLetterTiles(letter);
+  const player = GS.players[GS.currentPlayerIndex];
+
+  if (count > 0) {
+    const earned = GS.lastSpinValue * count;
+    player.roundEarnings += earned;
+    updateScoreboard();
+    const letterWord = count === 1 ? 'is 1' : 'are ' + count;
+    const body = `There ${letterWord} "${letter}"!`;
+    const sub  = earned > 0 ? `+$${earned.toLocaleString()} — Spin again!` : 'Spin again!';
+    if (!checkAutoSolve()) {
+      showGuessResultModal('#43a047', '✓ Correct!', body, sub, () => {
+        GS.turnPhase = 'SPIN';
+        enableTurnButtons();
+      });
+    }
+  } else {
+    const nextName = GS.players[(GS.currentPlayerIndex + 1) % 4].name;
+    showGuessResultModal('#e63946', `✗ No "${letter}"`, 'Not in the puzzle.', `Turn passes to ${nextName}.`, () => {
+      advanceToNextPlayer();
+    });
+  }
+}
+
+function handleVowelGuess(letter) {
+  const player = GS.players[GS.currentPlayerIndex];
+  player.roundEarnings = Math.max(0, player.roundEarnings - 250);
+  updateScoreboard();
+
+  GS.revealedLetters.add(letter);
+  const count = revealLetterTiles(letter);
+
+  if (count > 0) {
+    const letterWord = count === 1 ? 'is 1' : 'are ' + count;
+    const body = `There ${letterWord} "${letter}"!`;
+    if (!checkAutoSolve()) {
+      showGuessResultModal('#43a047', '✓ Correct!', body, 'Spin again!', () => {
+        GS.turnPhase = 'SPIN';
+        enableTurnButtons();
+      });
+    }
+  } else {
+    const nextName = GS.players[(GS.currentPlayerIndex + 1) % 4].name;
+    showGuessResultModal('#e63946', `✗ No "${letter}"`, 'Not in the puzzle.', `Turn passes to ${nextName}.`, () => {
+      advanceToNextPlayer();
+    });
+  }
+}
+
+function showGuessResultModal(headingColor, heading, body, sub, onOk) {
+  if (headingColor === '#43a047') playDing(); else playBuzz();
+  document.getElementById('guess-result-heading').textContent = heading;
+  document.getElementById('guess-result-heading').style.color = headingColor;
+  document.getElementById('guess-result-body').textContent = body;
+  document.getElementById('guess-result-body').style.color = headingColor;
+  document.getElementById('guess-result-sub').textContent = sub;
+
+  const btn    = document.getElementById('btn-guess-result-ok');
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  newBtn.addEventListener('click', () => { hideModal('modal-guess-result'); onOk(); });
+
+  showModal('modal-guess-result');
+}
+
+// Returns number of tiles revealed
+function revealLetterTiles(letter) {
+  const tiles = document.querySelectorAll('.letter-tile[data-letter="' + letter + '"]');
+  tiles.forEach(t => t.classList.add('revealed'));
+  return tiles.length;
+}
+
+function checkAutoSolve() {
+  const puzzle = GS.currentPuzzle.puzzle.replace(/ /g, '');
+  const unique = [...new Set(puzzle.split(''))];
+  const allRevealed = unique.every(l => GS.revealedLetters.has(l));
+  if (allRevealed) {
+    setTimeout(() => endRound(GS.currentPlayerIndex), 600);
+    return true;
+  }
+  return false;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SOLVE PUZZLE
+// ══════════════════════════════════════════════════════════════════
+function openSolveModal() {
+  const player = GS.players[GS.currentPlayerIndex];
+  document.getElementById('solve-player-name').textContent =
+    player.name + ' is attempting to solve...';
+  const inp = document.getElementById('solve-input');
+  inp.value = '';
+
+  const submitBtn = document.getElementById('btn-solve-submit');
+  const cancelBtn = document.getElementById('btn-solve-cancel');
+  const newSubmit = submitBtn.cloneNode(true);
+  const newCancel = cancelBtn.cloneNode(true);
+  submitBtn.parentNode.replaceChild(newSubmit, submitBtn);
+  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+  newSubmit.addEventListener('click', () => {
+    const answer = normalizeAnswer(inp.value);
+    const correct = normalizeAnswer(GS.currentPuzzle.puzzle);
+    if (!answer) return;
+    hideModal('modal-solve');
+    if (answer === correct) {
+      endRound(GS.currentPlayerIndex);
+    } else {
+      const nextName = GS.players[(GS.currentPlayerIndex + 1) % 4].name;
+      showGuessResultModal('#e63946', '✗ Incorrect!', 'That\'s not the puzzle.', `Turn passes to ${nextName}.`, () => {
+        advanceToNextPlayer();
+      });
+    }
+  });
+  newCancel.addEventListener('click', () => {
+    hideModal('modal-solve');
+    GS.turnPhase = 'SPIN';
+    enableTurnButtons();
+  });
+
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') newSubmit.click();
+  });
+
+  showModal('modal-solve');
+  setTimeout(() => inp.focus(), 100);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  TURN MANAGEMENT
+// ══════════════════════════════════════════════════════════════════
+function advanceToNextPlayer() {
+  GS.currentPlayerIndex = (GS.currentPlayerIndex + 1) % 4;
+  GS.turnPhase = 'SPIN';
+  updateScoreboard();
+  updateTurnLabel();
+  enableTurnButtons();
+}
+
+function enableTurnButtons() {
+  const player = GS.players[GS.currentPlayerIndex];
+  document.getElementById('btn-spin').disabled = false;
+  document.getElementById('btn-buy-vowel').disabled = (player.roundEarnings < 250);
+  document.getElementById('btn-solve-puzzle').disabled = false;
+  updateFreespinBadge();
+}
+
+function disableAllButtons() {
+  document.getElementById('btn-spin').disabled = true;
+  document.getElementById('btn-buy-vowel').disabled = true;
+  document.getElementById('btn-solve-puzzle').disabled = true;
+}
+
+function updateFreespinBadge() {
+  const player = GS.players[GS.currentPlayerIndex];
+  const badge  = document.getElementById('free-spin-badge');
+  badge.classList.toggle('visible', !!(player && player.hasFreeSpin));
+  // Also update scoreboard pip
+  GS.players.forEach((p, i) => {
+    const pip = document.querySelector('#player-card-' + i + ' .free-spin-pip');
+    if (pip) pip.classList.toggle('visible', !!p.hasFreeSpin);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ROUND & GAME MANAGEMENT
+// ══════════════════════════════════════════════════════════════════
+function startRound(roundIndex) {
+  GS.currentRound = roundIndex;
+  GS.currentPlayerIndex = 0;
+  GS.revealedLetters = new Set();
+  GS.players.forEach(p => { p.roundEarnings = 0; });
+
+  // Pick puzzle
+  let idx;
+  do { idx = Math.floor(Math.random() * PUZZLES.length); }
+  while (GS.usedPuzzleIndices.has(idx) && GS.usedPuzzleIndices.size < PUZZLES.length);
+  GS.usedPuzzleIndices.add(idx);
+  GS.currentPuzzle = PUZZLES[idx];
+
+  document.getElementById('round-indicator').textContent =
+    'Round ' + (roundIndex + 1) + ' of ' + NUM_ROUNDS;
+
+  renderPuzzleBoard();
+  buildAlphabetGrid();
+  updateScoreboard();
+  updateTurnLabel();
+  GS.turnPhase = 'SPIN';
+  enableTurnButtons();
+  drawWheel(GS.wheelAngle);
+}
+
+function endRound(winnerIndex) {
+  GS.turnPhase = 'WAITING';
+  disableAllButtons();
+
+  const winner = GS.players[winnerIndex];
+  winner.totalScore += winner.roundEarnings;
+
+  // Build scores display
+  const scoresEl = document.getElementById('round-end-scores');
+  scoresEl.innerHTML = GS.players.map((p, i) => {
+    const isWinner = i === winnerIndex;
+    return `<div style="padding:6px 0;border-bottom:1px solid #2a2a6e;display:flex;justify-content:space-between;align-items:center;">
+      <span style="color:${isWinner ? '#ffd700' : '#ccc'};font-weight:${isWinner ? 'bold' : 'normal'}">
+        ${isWinner ? '★ ' : ''}${p.name}
+      </span>
+      <span style="color:#ffd700">$${p.totalScore.toLocaleString()}</span>
+    </div>`;
+  }).join('');
+
+  const isLastRound = GS.currentRound >= NUM_ROUNDS - 1;
+  document.getElementById('round-end-heading').textContent =
+    isLastRound ? 'Final Round Complete!' : `Round ${GS.currentRound + 1} Complete!`;
+  document.getElementById('round-end-winner').textContent =
+    winner.name + ' solved the puzzle and earned $' + winner.roundEarnings.toLocaleString() + '!';
+
+  const nextBtn = document.getElementById('btn-next-round');
+  const newBtn  = nextBtn.cloneNode(true);
+  nextBtn.parentNode.replaceChild(newBtn, nextBtn);
+  newBtn.textContent = isLastRound ? 'See Final Results' : 'Next Round';
+  newBtn.addEventListener('click', () => {
+    hideModal('modal-round-end');
+    if (isLastRound) showGameEnd();
+    else startRound(GS.currentRound + 1);
+  });
+
+  showModal('modal-round-end');
+}
+
+function showGameEnd() {
+  const sorted = [...GS.players].sort((a, b) => b.totalScore - a.totalScore);
+  const champion = sorted[0];
+
+  document.getElementById('game-end-champion').textContent = champion.name;
+  document.getElementById('game-end-amount').textContent =
+    'Total winnings: $' + champion.totalScore.toLocaleString();
+
+  const medals = ['🥇','🥈','🥉','4️⃣'];
+  const scoresEl = document.getElementById('game-end-scores');
+  scoresEl.innerHTML = sorted.map((p, rank) => `
+    <div style="padding:10px 14px;margin:4px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;
+      background:${rank === 0 ? '#2a2a0a' : '#12124a'};
+      border:2px solid ${rank === 0 ? '#ffd700' : '#2a2a6e'};
+      ${rank === 0 ? 'box-shadow:0 0 12px #ffd70055;' : ''}">
+      <span style="font-size:1.1rem;color:${rank === 0 ? '#ffd700' : '#ccc'};font-weight:${rank === 0 ? 'bold' : 'normal'}">
+        ${medals[rank]} ${p.name}
+      </span>
+      <span style="font-size:1.2rem;color:${rank === 0 ? '#ffd700' : '#aaa'};font-weight:bold">
+        $${p.totalScore.toLocaleString()}
+      </span>
+    </div>
+  `).join('');
+
+  // Wire buttons
+  ['btn-play-again','btn-no-thanks'].forEach(id => {
+    const btn = document.getElementById(id);
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    newBtn.addEventListener('click', () => {
+      stopConfetti();
+      hideModal('modal-game-end');
+      if (id === 'btn-play-again') showSetupModal();
+    });
+  });
+
+  showModal('modal-game-end');
+  playFanfare();
+  startConfetti();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  PUZZLE BOARD RENDERING
+// ══════════════════════════════════════════════════════════════════
+function buildPuzzleRows(puzzleText) {
+  const words  = puzzleText.split(' ');
+  const MAX    = 14;
+  const rows   = [];
+  let current  = [], len = 0;
+  words.forEach(word => {
+    const needed = len > 0 ? word.length + 1 : word.length;
+    if (len > 0 && len + word.length + 1 > MAX) {
+      rows.push(current); current = [word]; len = word.length;
+    } else {
+      if (current.length > 0) len += 1;
+      current.push(word); len += word.length;
+    }
+  });
+  if (current.length > 0) rows.push(current);
+  return rows;
+}
+
+function renderPuzzleBoard() {
+  document.getElementById('puzzle-category').textContent =
+    'CATEGORY: ' + GS.currentPuzzle.category;
+
+  const container = document.getElementById('puzzle-rows');
+  container.innerHTML = '';
+
+  const rows = buildPuzzleRows(GS.currentPuzzle.puzzle);
+  rows.forEach(wordArr => {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'puzzle-row';
+    wordArr.forEach((word, wi) => {
+      if (wi > 0) {
+        const spacer = document.createElement('div');
+        spacer.className = 'letter-tile space';
+        rowDiv.appendChild(spacer);
+      }
+      word.split('').forEach(letter => {
+        const tile = document.createElement('div');
+        tile.className = 'letter-tile';
+        tile.dataset.letter = letter;
+        tile.textContent = letter; // set text but hidden via CSS color
+        if (GS.revealedLetters.has(letter)) tile.classList.add('revealed');
+        rowDiv.appendChild(tile);
+      });
+    });
+    container.appendChild(rowDiv);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ALPHABET GRID (sidebar display)
+// ══════════════════════════════════════════════════════════════════
+function buildAlphabetGrid() {
+  const grid = document.getElementById('alphabet-grid');
+  grid.innerHTML = '';
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter => {
+    const el = document.createElement('div');
+    el.className = 'alpha-key' + (VOWELS.has(letter) ? ' vowel' : '');
+    el.id = 'alpha-' + letter;
+    el.textContent = letter;
+    grid.appendChild(el);
+  });
+}
+
+function markLetterUsed(letter) {
+  const el = document.getElementById('alpha-' + letter);
+  if (el) el.classList.add('used');
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SCOREBOARD
+// ══════════════════════════════════════════════════════════════════
+function buildScoreboard() {
+  const sb = document.getElementById('scoreboard');
+  // Clear existing cards (keep title)
+  sb.querySelectorAll('.player-card').forEach(c => c.remove());
+
+  GS.players.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'player-card' + (i === GS.currentPlayerIndex ? ' active' : '');
+    card.id = 'player-card-' + i;
+    card.innerHTML = `
+      <div class="player-num">${i + 1}</div>
+      <div class="player-name">${p.name}</div>
+      <span class="free-spin-pip${p.hasFreeSpin ? ' visible' : ''}">FREE SPIN</span>
+      <div class="player-scores">
+        <div class="player-round">Round: $${p.roundEarnings.toLocaleString()}</div>
+        <div class="player-total">Total: $${p.totalScore.toLocaleString()}</div>
+      </div>`;
+    sb.appendChild(card);
+  });
+}
+
+function updateScoreboard() {
+  GS.players.forEach((p, i) => {
+    const card = document.getElementById('player-card-' + i);
+    if (!card) return;
+    card.classList.toggle('active', i === GS.currentPlayerIndex);
+    card.querySelector('.player-round').textContent  = 'Round: $' + p.roundEarnings.toLocaleString();
+    card.querySelector('.player-total').textContent  = 'Total: $' + p.totalScore.toLocaleString();
+    card.querySelector('.free-spin-pip').classList.toggle('visible', !!p.hasFreeSpin);
+    card.querySelector('.player-num').style.background = i === GS.currentPlayerIndex ? '#ffd700' : '#2a2a6e';
+    card.querySelector('.player-num').style.color      = i === GS.currentPlayerIndex ? '#0a0a2e' : '#fff';
+  });
+  // Mark used letters on sidebar
+  GS.revealedLetters.forEach(markLetterUsed);
+}
+
+function updateTurnLabel() {
+  const name = GS.players[GS.currentPlayerIndex]?.name || '—';
+  document.getElementById('turn-player-name').textContent = name;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SETUP
+// ══════════════════════════════════════════════════════════════════
+function showSetupModal() {
+  GS.players = [];
+  GS.currentRound = 0;
+  GS.usedPuzzleIndices = new Set();
+  GS.wheelAngle = 0;
+  GS.turnPhase = 'SPIN';
+  showModal('modal-setup');
+  drawWheel(0);
+}
+
+function startGame() {
+  const names = [0,1,2,3].map(i => {
+    const val = document.getElementById('name-' + i).value.trim();
+    return val || 'Player ' + (i + 1);
+  });
+
+  GS.players = names.map(name => ({
+    name, roundEarnings: 0, totalScore: 0, hasFreeSpin: false
+  }));
+
+  hideModal('modal-setup');
+  buildScoreboard();
+  buildAlphabetGrid();
+  startRound(0);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  MODAL HELPERS
+// ══════════════════════════════════════════════════════════════════
+function showModal(id) {
+  document.querySelectorAll('.modal').forEach(m => m.classList.remove('visible'));
+  document.getElementById(id).classList.add('visible');
+  document.getElementById('modal-overlay').classList.add('visible');
+}
+function hideModal(id) {
+  document.getElementById(id).classList.remove('visible');
+  document.getElementById('modal-overlay').classList.remove('visible');
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  UTILITY
+// ══════════════════════════════════════════════════════════════════
+function normalizeAnswer(s) {
+  return s.trim().toUpperCase().replace(/\s+/g, ' ');
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  EVENT LISTENERS
+// ══════════════════════════════════════════════════════════════════
+document.getElementById('btn-start-game').addEventListener('click', startGame);
+
+document.getElementById('btn-spin').addEventListener('click', () => {
+  if (GS.turnPhase !== 'SPIN') return;
+  spinWheel();
+});
+
+document.getElementById('btn-buy-vowel').addEventListener('click', () => {
+  if (GS.turnPhase !== 'SPIN') return;
+  GS.turnPhase = 'BUY_VOWEL';
+  openGuessModal(true);
+});
+
+document.getElementById('btn-solve-puzzle').addEventListener('click', () => {
+  if (GS.turnPhase === 'WAITING') return;
+  GS.turnPhase = 'WAITING';
+  openSolveModal();
+});
+
+// Enter key on setup name fields → start game
+document.querySelectorAll('.modal input[type="text"]').forEach(inp => {
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btn-start-game').click();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  setupCanvas();
+  drawWheel(0);
+  showModal('modal-setup');
+  // Pre-fill default names to speed up testing
+  // (remove if you want blank fields)
+});
+</script>
+</body>
+</html>
