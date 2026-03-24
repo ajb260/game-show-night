@@ -814,6 +814,7 @@
     // ── FINAL SWAP ──
     function showFinalSwap() {
       const last = state.cases.find(c => !c.opened && c.id !== state.playerCaseId);
+      if (!last) { revealCase(false); return; } // safety net — should never happen
       document.getElementById('swap-cases-row').innerHTML =
         `<div class="swap-case">` +
           `<div class="swap-case-icon">💼</div>` +
@@ -830,6 +831,7 @@
     }
     function doSwap() {
       const last = state.cases.find(c => !c.opened && c.id !== state.playerCaseId);
+      if (!last) { hideModal(); revealCase(false); return; } // safety net
       // Mark old player case as opened so reveal shows it
       state.cases.find(c => c.id === state.playerCaseId).opened = true;
       state.playerCaseId = last.id;

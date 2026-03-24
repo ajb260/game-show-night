@@ -992,7 +992,6 @@ function showAnswerModal() {
 }
 
 document.getElementById('btn-back').addEventListener('click', returnToBoard);
-document.getElementById('btn-reveal').addEventListener('click', () => {});
 
 function returnToBoard() {
   if (!state.activeQuestion) return;
@@ -1016,6 +1015,7 @@ function showFinalJeopardy() {
 }
 
 document.getElementById('btn-fj-show-q').addEventListener('click', () => {
+  if (!activeFJ) return;
   state.phase = 'fj-question';
   document.getElementById('fj-q-category').textContent = activeFJ.category;
   document.getElementById('fj-clue').textContent = activeFJ.q;
@@ -1023,6 +1023,7 @@ document.getElementById('btn-fj-show-q').addEventListener('click', () => {
 });
 
 document.getElementById('btn-fj-reveal').addEventListener('click', () => {
+  if (!activeFJ) return;
   state.phase = 'fj-answer';
   document.getElementById('fj-a-category').textContent = activeFJ.category;
   document.getElementById('fj-a-clue').textContent = activeFJ.q;
