@@ -545,7 +545,7 @@ const WHEEL_WEDGES = [
   { label: 'LOSE TURN',value: 'LOSE_TURN',color: '#922b21' },
   { label: '$800',     value: 800,        color: '#117a65' },
   { label: '$2500',    value: 2500,       color: '#f39c12' },
-  { label: 'BANKRUPT', value: 'BANKRUPT', color: '#1c1c1c' },
+  { label: '$450',     value: 450,        color: '#1e8449' },
   { label: '$400',     value: 400,        color: '#6e2f8b' },
   { label: 'FREE SPIN',value: 'FREE_SPIN',color: '#27ae60' },
   { label: '$600',     value: 600,        color: '#d35400' },
@@ -849,11 +849,11 @@ function spinWheel() {
   delta = ((delta % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
   if (delta < 0.1) delta += 2 * Math.PI;
 
-  const fullSpins = (5 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
+  const fullSpins = (6 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
   const totalDelta = fullSpins + delta;
   const startAngle = GS.wheelAngle;
   const endAngle   = startAngle + totalDelta;
-  const duration   = 3200 + Math.random() * 1400; // 3.2–4.6 s
+  const duration   = 5500 + Math.random() * 2000; // 5.5–7.5 s
   const startTime  = performance.now();
 
   GS.wheelSpinning = true;
@@ -863,8 +863,8 @@ function spinWheel() {
   function animate(now) {
     const elapsed  = now - startTime;
     const progress = Math.min(elapsed / duration, 1);
-    // Ease-out quartic — decelerates more gradually at the end
-    const eased = 1 - Math.pow(1 - progress, 4);
+    // Ease-out septic — fast start, long dramatic crawl at the end
+    const eased = 1 - Math.pow(1 - progress, 7);
     const prevAngle = GS.wheelAngle;
     GS.wheelAngle = startAngle + totalDelta * eased;
     drawWheel(GS.wheelAngle);
@@ -1204,11 +1204,16 @@ function startRound(roundIndex) {
   GS.revealedLetters = new Set();
   GS.players.forEach(p => { p.roundEarnings = 0; });
 
-  // Pick puzzle
+  // Pick puzzle — reset pool if all puzzles have been used
+  if (GS.usedPuzzleIndices.size >= PUZZLES.length) {
+    GS.usedPuzzleIndices = new Set();
+    localStorage.removeItem('wof_usedPuzzleIndices');
+  }
   let idx;
   do { idx = Math.floor(Math.random() * PUZZLES.length); }
-  while (GS.usedPuzzleIndices.has(idx) && GS.usedPuzzleIndices.size < PUZZLES.length);
+  while (GS.usedPuzzleIndices.has(idx));
   GS.usedPuzzleIndices.add(idx);
+  localStorage.setItem('wof_usedPuzzleIndices', JSON.stringify([...GS.usedPuzzleIndices]));
   GS.currentPuzzle = PUZZLES[idx];
 
   document.getElementById('round-indicator').textContent =
@@ -1448,7 +1453,8 @@ function removePlayerRow(n) {
 function showSetupModal() {
   GS.players = [];
   GS.currentRound = 0;
-  GS.usedPuzzleIndices = new Set();
+  const stored = JSON.parse(localStorage.getItem('wof_usedPuzzleIndices') || '[]');
+  GS.usedPuzzleIndices = new Set(stored);
   GS.wheelAngle = 0;
   GS.turnPhase = 'SPIN';
   playerRowCount = 0;
