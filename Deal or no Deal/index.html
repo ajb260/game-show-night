@@ -101,6 +101,14 @@
       background: #111 !important;
       text-decoration: line-through;
     }
+    .value-item.flash {
+      animation: val-flash 0.55s ease-out;
+    }
+    @keyframes val-flash {
+      0%   { transform: scale(1);    box-shadow: none; }
+      35%  { transform: scale(1.12); box-shadow: 0 0 14px currentColor; }
+      100% { transform: scale(1);    box-shadow: none; }
+    }
 
     /* ── GAME AREA ── */
     #game-area {
@@ -187,9 +195,37 @@
       background: #12124a;
       border-radius: 10px;
       border: 2px solid #2a2a6e;
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
     #round-info-text { font-size: 1.05rem; color: #aad4ff; letter-spacing: 1px; }
-    #round-info-text em { color: #ffd700; font-style: normal; font-size: 1.3rem; }
+    #round-info-text em { color: #ffd700; font-style: normal; font-size: 1.3rem; display: inline-block; }
+    @keyframes pop { 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.5) } }
+    #undo-btn {
+      background: transparent;
+      border: 1px solid #4a4aae;
+      color: #aad4ff;
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      display: none;
+    }
+    #undo-btn:hover { border-color: #ff7070; color: #ff7070; }
+
+    /* ── SCREEN FLASH ── */
+    #screen-flash {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, rgba(255,215,0,0.55) 0%, transparent 70%);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 300;
+      transition: opacity 0.08s;
+    }
 
     /* ── MODAL OVERLAY ── */
     #modal-overlay {
@@ -387,6 +423,7 @@
 </head>
 <body>
   <canvas id="confetti-canvas"></canvas>
+  <div id="screen-flash"></div>
 
   <div id="game-container">
     <!-- TOP BAR -->
@@ -407,6 +444,7 @@
         <div id="cases-grid"></div>
         <div id="round-info">
           <div id="round-info-text">Welcome to Deal or No Deal!</div>
+          <button id="undo-btn" onclick="undoCase()">↩ Undo Last</button>
         </div>
       </div>
     </div>
@@ -493,7 +531,7 @@
       cases: [],
       playerCaseId: null,
       currentRound: 0,
-      roundsConfig: [5, 4, 3, 1, 1],
+      roundsConfig: [5, 4, 3, 2],
       casesLeftThisRound: 0,
       bankerOffer: 0,
     };
@@ -528,6 +566,8 @@
       else      { tone(330, 0, 0.3, 'sine', 0.3); tone(262, 0.25, 0.5, 'sine', 0.2); }
     }
     let phoneTimer = null;
+    let lastOpenedCaseId = null;
+    let introAnimActive  = false;
     function playPhoneRing() {
       tone(880, 0, 0.14, 'square', 0.22); tone(880, 0.18, 0.14, 'square', 0.22);
       tone(660, 0.42, 0.14, 'square', 0.22); tone(660, 0.6, 0.14, 'square', 0.22);
@@ -564,7 +604,7 @@
     function calcOffer(vals, round) {
       if (!vals.length) return 0;
       const ev  = vals.reduce((a, b) => a + b, 0) / vals.length;
-      const pct = [0.15, 0.25, 0.40, 0.60, 0.80][Math.min(round - 1, 4)];
+      const pct = [0.10, 0.22, 0.42, 0.68][Math.min(round - 1, 3)];
       return Math.round(ev * pct);
     }
 
@@ -582,6 +622,7 @@
     // ── SETUP ──
     let inputCount = 0;
     function showSetupModal() {
+      introAnimActive = false;
       stopPhoneRing();
       state.phase = 'setup';
       inputCount = 0;
@@ -739,13 +780,17 @@
         const c = state.cases.find(c => c.id === id);
         if (!c || c.opened || id === state.playerCaseId) return;
         c.opened = true;
+        lastOpenedCaseId = id;
         playCaseOpen();
         state.casesLeftThisRound--;
         if (state.casesLeftThisRound === 0) {
           state.phase = 'banker'; // lock grid now so no cases are clickable during the delay
+          lastOpenedCaseId = null; // can't undo once banker is triggered
         }
         renderGrid();
         renderValuesBoard();
+        document.getElementById('undo-btn').style.display =
+          state.phase === 'open_cases' ? '' : 'none';
         if (state.phase === 'banker') {
           setTimeout(showBankerOffer, 700);
         } else {
@@ -761,9 +806,46 @@
       const n = state.casesLeftThisRound;
       el.innerHTML =
         `Round ${state.currentRound} of ${state.roundsConfig.length} — Open <em>${n}</em> more case${n !== 1 ? 's' : ''}`;
+      const emEl = el.querySelector('em');
+      if (emEl) { emEl.style.animation = 'none'; void emEl.offsetWidth; emEl.style.animation = 'pop 0.32s ease'; }
+    }
+
+    // ── UNDO ──
+    function undoCase() {
+      if (!lastOpenedCaseId || state.phase !== 'open_cases') return;
+      const c = state.cases.find(c => c.id === lastOpenedCaseId);
+      if (!c) return;
+      c.opened = false;
+      state.casesLeftThisRound++;
+      lastOpenedCaseId = null;
+      renderGrid();
+      renderValuesBoard();
+      setRoundInfo();
+      document.getElementById('undo-btn').style.display = 'none';
     }
 
     // ── BANKER OFFER ──
+    function flashHighValues() {
+      document.querySelectorAll('.value-item.tier3:not(.eliminated), .value-item.tier4:not(.eliminated)')
+        .forEach((el, i) => {
+          setTimeout(() => {
+            el.classList.remove('flash');
+            void el.offsetWidth;
+            el.classList.add('flash');
+          }, i * 60);
+        });
+    }
+
+    function animateCountUp(target, el, duration) {
+      const start = performance.now();
+      (function step(now) {
+        const t = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+        el.textContent = formatMoney(Math.round(target * eased));
+        if (t < 1) requestAnimationFrame(step);
+      })(start);
+    }
+
     function showBankerOffer() {
       const vals  = remainingValues();
       state.bankerOffer = calcOffer(vals, state.currentRound);
@@ -776,21 +858,33 @@
       document.getElementById('deal-buttons').style.display = 'none';
       showModal('modal-banker');
       startPhoneRing();
+      flashHighValues();
 
       setTimeout(() => {
         stopPhoneRing();
         document.getElementById('banker-phone').classList.add('still');
         document.getElementById('banker-message').textContent = 'The banker offers you:';
-        document.getElementById('banker-offer-display').textContent = formatMoney(state.bankerOffer);
+        const offerEl = document.getElementById('banker-offer-display');
+        animateCountUp(state.bankerOffer, offerEl, 1100);
         document.getElementById('offer-context').textContent =
           `Expected value: ${formatMoney(Math.round(ev))}  •  ${vals.length} case${vals.length !== 1 ? 's' : ''} remaining`;
-        document.getElementById('deal-buttons').style.display = 'flex';
+        setTimeout(() => {
+          document.getElementById('deal-buttons').style.display = 'flex';
+        }, 1150);
       }, 2200);
+    }
+
+    function flashScreen() {
+      const el = document.getElementById('screen-flash');
+      el.style.opacity = '1';
+      setTimeout(() => { el.style.opacity = '0'; }, 120);
     }
 
     function onDeal() {
       stopPhoneRing();
       playDeal();
+      flashScreen();
+      launchConfetti(true);
       const p = state.players[state.currentPlayerIdx];
       p.earned = state.bankerOffer;
       p.dealAccepted = true;
@@ -808,6 +902,8 @@
         state.currentRound++;
         state.phase = 'open_cases';
         state.casesLeftThisRound = state.roundsConfig[state.currentRound - 1];
+        lastOpenedCaseId = null;
+        document.getElementById('undo-btn').style.display = 'none';
         updateTopBar();
         setRoundInfo();
         renderGrid();
@@ -943,24 +1039,27 @@
     let particles = [], animId = null;
     const colors  = ['#ffd700','#ff6b6b','#89cfff','#98ff98','#ffb347','#ff69b4','#ffffff'];
 
-    function launchConfetti() {
+    function launchConfetti(big = false) {
       ccv.width  = window.innerWidth;
       ccv.height = window.innerHeight;
-      particles  = [];
-      for (let i = 0; i < 130; i++) {
-        particles.push({
-          x: Math.random() * ccv.width,
-          y: -10 - Math.random() * 40,
-          vx: (Math.random() - 0.5) * 4,
-          vy: Math.random() * 3 + 1.5,
+      const count = big ? 280 : 130;
+      const newParticles = [];
+      for (let i = 0; i < count; i++) {
+        const fromCenter = big && Math.random() < 0.5;
+        newParticles.push({
+          x: fromCenter ? ccv.width / 2 + (Math.random() - 0.5) * 80 : Math.random() * ccv.width,
+          y: fromCenter ? ccv.height / 2 + (Math.random() - 0.5) * 80 : -10 - Math.random() * 40,
+          vx: (Math.random() - 0.5) * (big ? 10 : 4),
+          vy: fromCenter ? (Math.random() - 0.5) * 12 : Math.random() * 3 + 1.5,
           rot: Math.random() * 360,
-          rotV: (Math.random() - 0.5) * 7,
-          w: Math.random() * 10 + 6,
+          rotV: (Math.random() - 0.5) * (big ? 14 : 7),
+          w: Math.random() * (big ? 14 : 10) + 6,
           h: Math.random() * 6 + 4,
           color: colors[Math.floor(Math.random() * colors.length)],
           alpha: 1,
         });
       }
+      particles = [...particles, ...newParticles];
       if (animId) cancelAnimationFrame(animId);
       animConfetti();
     }
@@ -998,12 +1097,15 @@
     }
 
     async function runIntroAnimation() {
+      introAnimActive = true;
       // Countdown 3 → 1 while values are visible
       for (let i = 2; i >= 1; i--) {
         await sleep(1000);
+        if (!introAnimActive) return;
         setRoundInfo(`Memorize the cases! Shuffling in <em>${i}</em>...`);
       }
       await sleep(1000);
+      if (!introAnimActive) return;
       setRoundInfo('Now shuffling...');
 
       // Shrink / fade cards closed
@@ -1014,6 +1116,7 @@
         card.style.opacity    = '0.2';
       });
       await sleep(400);
+      if (!introAnimActive) return;
 
       // Restore each card as a blank closed briefcase — no number shown yet
       Array.from(grid.children).forEach(card => {
@@ -1024,9 +1127,11 @@
         card.innerHTML        = `<div class="case-icon">💼</div>`;
       });
       await sleep(200);
+      if (!introAnimActive) return;
 
-      // Shuffle: 20 fast animated DOM swaps (no numbers = impossible to track!)
+      // Shuffle: 20 steps of 2 simultaneous swaps = 40 actual swaps
       await doShuffleAnimation();
+      if (!introAnimActive) return;
 
       // Reveal case numbers now that shuffling is done
       Array.from(grid.children).forEach(card => {
@@ -1037,6 +1142,7 @@
           `<div class="case-sublabel">Case</div>`;
       });
       await sleep(150);
+      if (!introAnimActive) return;
 
       // Enable case selection
       state.phase = 'select_case';
@@ -1049,38 +1155,44 @@
 
     async function doShuffleAnimation() {
       const grid = document.getElementById('cases-grid');
-      for (let n = 0; n < 40; n++) {
+      for (let n = 0; n < 20 && introAnimActive; n++) {
         const cards = Array.from(grid.children);
-        const i = Math.floor(Math.random() * cards.length);
-        let j   = Math.floor(Math.random() * cards.length);
-        while (j === i) j = Math.floor(Math.random() * cards.length);
+        // Pick 2 non-overlapping pairs
+        const used = new Set();
+        const pairs = [];
+        for (let p = 0; p < 2; p++) {
+          const avail = cards.map((_, idx) => idx).filter(idx => !used.has(idx));
+          if (avail.length < 2) break;
+          const ai = Math.floor(Math.random() * avail.length);
+          let bi = Math.floor(Math.random() * (avail.length - 1));
+          if (bi >= ai) bi++;
+          used.add(avail[ai]); used.add(avail[bi]);
+          pairs.push([cards[avail[ai]], cards[avail[bi]]]);
+        }
 
-        const cardA = cards[i];
-        const cardB = cards[j];
-        const rectA = cardA.getBoundingClientRect();
-        const rectB = cardB.getBoundingClientRect();
-        const dx = rectB.left - rectA.left;
-        const dy = rectB.top  - rectA.top;
-
-        cardA.style.zIndex     = '10';
-        cardB.style.zIndex     = '5';
-        cardA.style.transition = 'transform 0.08s ease-in-out';
-        cardB.style.transition = 'transform 0.08s ease-in-out';
-        cardA.style.transform  = `translate(${dx}px,${dy}px)`;
-        cardB.style.transform  = `translate(${-dx}px,${-dy}px)`;
+        // Measure positions then apply all transforms simultaneously
+        const moves = pairs.map(([a, b]) => {
+          const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+          return { a, b, dx: rb.left - ra.left, dy: rb.top - ra.top };
+        });
+        moves.forEach(({ a, b, dx, dy }) => {
+          a.style.zIndex = '10'; b.style.zIndex = '5';
+          a.style.transition = b.style.transition = 'transform 0.10s ease-in-out';
+          a.style.transform = `translate(${dx}px,${dy}px)`;
+          b.style.transform = `translate(${-dx}px,${-dy}px)`;
+        });
         playWhoosh();
 
-        await sleep(90);
+        await sleep(115);
 
-        swapDOMElements(cardA, cardB);
-        cardA.style.transition = 'none';
-        cardB.style.transition = 'none';
-        cardA.style.transform  = '';
-        cardB.style.transform  = '';
-        cardA.style.zIndex     = '';
-        cardB.style.zIndex     = '';
+        moves.forEach(({ a, b }) => {
+          swapDOMElements(a, b);
+          a.style.transition = b.style.transition = 'none';
+          a.style.transform  = b.style.transform  = '';
+          a.style.zIndex     = b.style.zIndex     = '';
+        });
 
-        await sleep(20);
+        await sleep(25);
       }
     }
 
