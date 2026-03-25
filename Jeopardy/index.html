@@ -627,6 +627,42 @@
     }
     .btn-fj-wrong:hover { background: #aa2222; }
 
+    /* ── QUESTION TIMER ── */
+    #q-timer-bar {
+      display: flex;
+      gap: 3px;
+      justify-content: center;
+      margin: 16px 0 6px;
+      flex-wrap: nowrap;
+    }
+
+    .timer-block {
+      width: 26px;
+      height: 26px;
+      background: #cc2200;
+      border-radius: 3px;
+      flex-shrink: 0;
+      box-shadow: 0 0 7px rgba(255, 80, 0, 0.6);
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    .timer-block.urgent {
+      background: #ff2200;
+      box-shadow: 0 0 12px rgba(255, 30, 0, 0.95);
+      animation: timerUrgent 0.5s ease-in-out infinite alternate;
+    }
+
+    .timer-block.off {
+      background: #1a0500;
+      box-shadow: none;
+      animation: none;
+    }
+
+    @keyframes timerUrgent {
+      from { opacity: 1; }
+      to   { opacity: 0.45; }
+    }
+
     /* ── QUESTION HINT ── */
     #keyboard-hint {
       position: fixed;
@@ -686,6 +722,7 @@
     <div class="modal-category-label" id="q-category"></div>
     <div class="modal-value" id="q-value"></div>
     <p class="modal-clue" id="q-clue"></p>
+    <div id="q-timer-bar"></div>
     <button class="btn" id="btn-reveal">Reveal Answer</button>
   </div>
 
@@ -795,6 +832,91 @@ function playDailyDoubleSound() {
       osc.frequency.value = freq;
       osc.type = 'square';
       gain.gain.setValueAtTime(0.3, ctx.currentTime + when);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + when + dur);
+      osc.start(ctx.currentTime + when);
+      osc.stop(ctx.currentTime + when + dur);
+    });
+  } catch (e) { /* audio not available */ }
+}
+
+// ── TIMER ──────────────────────────────────────────────────────────────────
+const TIMER_SECONDS = 15;
+let timerInterval = null;
+let timerRemaining = 0;
+
+function buildTimerBlocks() {
+  const bar = document.getElementById('q-timer-bar');
+  bar.innerHTML = '';
+  for (let i = 0; i < TIMER_SECONDS; i++) {
+    const b = document.createElement('div');
+    b.className = 'timer-block';
+    b.id = `tb-${i}`;
+    bar.appendChild(b);
+  }
+}
+
+function startTimer() {
+  stopTimer();
+  timerRemaining = TIMER_SECONDS;
+  buildTimerBlocks();
+  timerInterval = setInterval(() => {
+    const offIdx = timerRemaining - 1;
+    timerRemaining--;
+    const offBlock = document.getElementById(`tb-${offIdx}`);
+    if (offBlock) offBlock.className = 'timer-block off';
+
+    playTickSound();
+
+    // Turn remaining blocks urgent (pulsing red) when 10 or fewer left
+    if (timerRemaining <= 10 && timerRemaining > 0) {
+      for (let i = 0; i < timerRemaining; i++) {
+        const b = document.getElementById(`tb-${i}`);
+        if (b && !b.classList.contains('off')) b.classList.add('urgent');
+      }
+    }
+
+    if (timerRemaining <= 0) {
+      stopTimer();
+      playTimerEndSound();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+function playTickSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Short noise burst — sounds like a soft click
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.018), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.18;
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+  } catch (e) { /* audio not available */ }
+}
+
+function playTimerEndSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[220, 0, 0.35], [196, 0.35, 0.4]].forEach(([freq, when, dur]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sawtooth';
+      gain.gain.setValueAtTime(0.35, ctx.currentTime + when);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + when + dur);
       osc.start(ctx.currentTime + when);
       osc.stop(ctx.currentTime + when + dur);
@@ -944,12 +1066,14 @@ function showQuestionModal() {
   document.getElementById('q-value').textContent = `$${wager.toLocaleString()}`;
   document.getElementById('q-clue').textContent = aq.q;
   showOnly('modal-question');
+  startTimer();
 }
 
 document.getElementById('btn-reveal').addEventListener('click', showAnswerModal);
 
 // ── ANSWER MODAL ───────────────────────────────────────────────────────────
 function showAnswerModal() {
+  stopTimer();
   state.phase = 'answer';
   const aq = state.activeQuestion;
   const cat = categories[aq.catIdx];
@@ -995,6 +1119,7 @@ function showAnswerModal() {
 document.getElementById('btn-back').addEventListener('click', returnToBoard);
 
 function returnToBoard() {
+  stopTimer();
   if (!state.activeQuestion) return;
   markTileUsed(state.activeQuestion.catIdx, state.activeQuestion.rowIdx);
   state.activeQuestion = null;
