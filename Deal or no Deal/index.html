@@ -1046,7 +1046,7 @@
 
     async function doShuffleAnimation() {
       const grid = document.getElementById('cases-grid');
-      for (let n = 0; n < 20; n++) {
+      for (let n = 0; n < 40; n++) {
         const cards = Array.from(grid.children);
         const i = Math.floor(Math.random() * cards.length);
         let j   = Math.floor(Math.random() * cards.length);
@@ -1061,13 +1061,13 @@
 
         cardA.style.zIndex     = '10';
         cardB.style.zIndex     = '5';
-        cardA.style.transition = 'transform 0.14s ease-in-out';
-        cardB.style.transition = 'transform 0.14s ease-in-out';
+        cardA.style.transition = 'transform 0.08s ease-in-out';
+        cardB.style.transition = 'transform 0.08s ease-in-out';
         cardA.style.transform  = `translate(${dx}px,${dy}px)`;
         cardB.style.transform  = `translate(${-dx}px,${-dy}px)`;
         playWhoosh();
 
-        await sleep(155);
+        await sleep(90);
 
         swapDOMElements(cardA, cardB);
         cardA.style.transition = 'none';
@@ -1077,7 +1077,7 @@
         cardA.style.zIndex     = '';
         cardB.style.zIndex     = '';
 
-        await sleep(35);
+        await sleep(20);
       }
     }
 
