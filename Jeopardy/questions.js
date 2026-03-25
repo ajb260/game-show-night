@@ -85,7 +85,7 @@ const ALL_CATEGORIES = [
         { value: 200,  q: "The only country to win the FIFA World Cup five times.", a: "What is Brazil?" },
         { value: 400,  q: "In February 2023, this NBA player surpassed Kareem Abdul-Jabbar to become the all-time leading scorer in NBA history.", a: "Who is LeBron James?" },
         { value: 600,  q: "Before becoming Muhammad Ali, this boxing champion was known by this birth name.", a: "Who is Cassius Clay?" },
-        { value: 800,  q: "As of 2024, this tennis player holds the record for the most men's Grand Slam singles titles with 24.", a: "Who is Novak Djokovic?" },
+        { value: 800,  q: "This Serbian tennis player holds the all-time record for the most men's Grand Slam singles titles in history.", a: "Who is Novak Djokovic?" },
         { value: 1000, q: "The annual horse race held in Louisville, Kentucky, known as the 'Run for the Roses.'", a: "What is the Kentucky Derby?" }
       ]
     }
@@ -138,7 +138,7 @@ const ALL_CATEGORIES = [
         { value: 1000, q: "Jack Black played a blocky character named Steve in this 2025 video-game blockbuster.", a: "What is A Minecraft Movie?" }
       ],
       hard: [
-        { value: 200,  q: "Robert Downey Jr. played this character across 10 films in the Marvel Cinematic Universe.", a: "Who is Iron Man (Tony Stark)?" },
+        { value: 200,  q: "Robert Downey Jr. played this armored Marvel superhero across numerous MCU films before his dramatic exit in Avengers: Endgame.", a: "Who is Iron Man (Tony Stark)?" },
         { value: 400,  q: "The fictional sport played on broomsticks in the Harry Potter universe.", a: "What is Quidditch?" },
         { value: 600,  q: "'I am inevitable' and 'I am Iron Man' are the climactic lines of this 2019 Marvel film.", a: "What is Avengers: Endgame?" },
         { value: 800,  q: "This 2001 animated film became the first ever winner of the Academy Award for Best Animated Feature at the 2002 ceremony.", a: "What is Shrek?" },
@@ -156,7 +156,7 @@ const ALL_CATEGORIES = [
         { value: 400,  q: "This book of scripture was translated by Joseph Smith from gold plates.", a: "What is the Book of Mormon?" },
         { value: 600,  q: "Young men in the Church typically begin serving full-time missions at this age.", a: "What is 18?" },
         { value: 800,  q: "Church members gather each Sunday for this main worship service where the sacrament is blessed and passed.", a: "What is sacrament meeting?" },
-        { value: 1000, q: "This Church president oversaw the construction of more temples than any other prophet in Church history.", a: "Who is Gordon B. Hinckley?" }
+        { value: 1000, q: "This Church president dedicated more than 85 new temples during his presidency — more than any prophet before him.", a: "Who is Gordon B. Hinckley?" }
       ],
       medium: [
         { value: 200,  q: "Young men in the Church begin serving as deacons at this age.", a: "What is 12?" },
@@ -408,13 +408,13 @@ const ALL_CATEGORIES = [
         { value: 400,  q: "The name of the prophet who translated the Book of Mormon.", a: "Who is Joseph Smith?" },
         { value: 600,  q: "Joseph Smith was this many years old when he had his First Vision in the Sacred Grove.", a: "What is 14?" },
         { value: 800,  q: "This prophet led the pioneer Saints from Nauvoo across the plains to the Salt Lake Valley.", a: "Who is Brigham Young?" },
-        { value: 1000, q: "This Church president oversaw the construction of more temples than any other prophet in Church history.", a: "Who is Gordon B. Hinckley?" }
+        { value: 1000, q: "This Church president dedicated more than 85 new temples during his presidency — more than any prophet before him.", a: "Who is Gordon B. Hinckley?" }
       ],
       medium: [
         { value: 200,  q: "The current prophet and president of the Church of Jesus Christ of Latter-day Saints.", a: "Who is Dallin H. Oaks?" },
         { value: 400,  q: "Joseph Smith was this many years old when he had his First Vision.", a: "What is 14?" },
         { value: 600,  q: "This second president of the Church led the Saints across the plains to the Salt Lake Valley.", a: "Who is Brigham Young?" },
-        { value: 800,  q: "Gordon B. Hinckley oversaw the construction of more of these than any other prophet in Church history.", a: "What are temples?" },
+        { value: 800,  q: "Gordon B. Hinckley dedicated more than 85 of these during his presidency — more than any prophet before him.", a: "What are temples?" },
         { value: 1000, q: "This prophet received the revelation in 1978 extending the priesthood to all worthy male members.", a: "Who is Spencer W. Kimball?" }
       ],
       hard: [
@@ -455,7 +455,7 @@ const FINAL_JEOPARDY = [
   },
   {
     category: "US Presidents",
-    q: "He is the only U.S. president to serve two non-consecutive terms, making him both the 22nd and 24th president.",
+    q: "He was the first U.S. president to serve two non-consecutive terms, making him both the 22nd and 24th president.",
     a: "Who is Grover Cleveland?"
   },
   {
