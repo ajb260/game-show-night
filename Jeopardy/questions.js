@@ -425,6 +425,230 @@ const ALL_CATEGORIES = [
         { value: 1000, q: "This Church president formally introduced the welfare program in 1936 to help members suffering during the Great Depression.", a: "Who is Heber J. Grant?" }
       ]
     }
+  },
+
+  // ── 16. SPACE & ASTRONOMY ─────────────────────────────────────────────────
+  {
+    name: "Space & Astronomy",
+    questions: {
+      easy: [
+        { value: 200,  q: "The star at the center of our solar system.", a: "What is the sun?" },
+        { value: 400,  q: "The largest planet in our solar system.", a: "What is Jupiter?" },
+        { value: 600,  q: "Earth's only natural satellite.", a: "What is the Moon?" },
+        { value: 800,  q: "A 'shooting star' is actually this object burning up in Earth's atmosphere.", a: "What is a meteor?" },
+        { value: 1000, q: "The name of NASA's historic first crewed mission to land on the Moon in 1969.", a: "What is Apollo 11?" }
+      ],
+      medium: [
+        { value: 200,  q: "The planet in our solar system known as the 'Red Planet.'", a: "What is Mars?" },
+        { value: 400,  q: "The number of planets in our solar system, following Pluto's demotion in 2006.", a: "What is 8?" },
+        { value: 600,  q: "This dwarf planet was reclassified and demoted from full-planet status in 2006.", a: "What is Pluto?" },
+        { value: 800,  q: "A light-year is a unit of this — not time.", a: "What is distance?" },
+        { value: 1000, q: "The name of the first artificial satellite ever launched into orbit, sent up by the Soviet Union in 1957.", a: "What is Sputnik?" }
+      ],
+      hard: [
+        { value: 200,  q: "The Great Red Spot visible on Jupiter is actually this type of weather phenomenon.", a: "What is a storm (a massive, centuries-old hurricane-like storm)?" },
+        { value: 400,  q: "The layer of Earth's upper atmosphere that absorbs most of the sun's harmful ultraviolet radiation.", a: "What is the ozone layer?" },
+        { value: 600,  q: "A collapsed star with gravity so intense that not even light can escape.", a: "What is a black hole?" },
+        { value: 800,  q: "The name of the galaxy that contains our solar system.", a: "What is the Milky Way?" },
+        { value: 1000, q: "The term for the point inside a black hole where gravity becomes infinite and the known laws of physics break down.", a: "What is the singularity?" }
+      ]
+    }
+  },
+
+  // ── 17. WORLD HISTORY ────────────────────────────────────────────────────
+  {
+    name: "World History",
+    questions: {
+      easy: [
+        { value: 200,  q: "The ancient civilization that built the pyramids of Giza.", a: "Who are the ancient Egyptians?" },
+        { value: 400,  q: "Christopher Columbus first sailed to the Americas in this year.", a: "What is 1492?" },
+        { value: 600,  q: "The Great Wall was built to protect this country from northern invaders.", a: "What is China?" },
+        { value: 800,  q: "Roman gladiators fought to the crowd's delight in this famous arena in Rome.", a: "What is the Colosseum?" },
+        { value: 1000, q: "World War II ended in this year.", a: "What is 1945?" }
+      ],
+      medium: [
+        { value: 200,  q: "This ancient empire, built around the city of Rome, was one of the largest in history.", a: "What is the Roman Empire?" },
+        { value: 400,  q: "Napoleon Bonaparte was the military general and emperor of this country.", a: "What is France?" },
+        { value: 600,  q: "This document, signed by King John of England in 1215, limited the king's power and is a forerunner of modern constitutional rights.", a: "What is the Magna Carta?" },
+        { value: 800,  q: "World War I began after the assassination of this Austrian archduke in Sarajevo in 1914.", a: "Who is Archduke Franz Ferdinand?" },
+        { value: 1000, q: "The ancient network of trade routes that connected China to the Mediterranean world.", a: "What is the Silk Road?" }
+      ],
+      hard: [
+        { value: 200,  q: "The Allied invasion of Normandy, France on June 6, 1944 is known by this name.", a: "What is D-Day (or Operation Overlord)?" },
+        { value: 400,  q: "Napoleon Bonaparte suffered his final defeat at this 1815 battle in present-day Belgium.", a: "What is the Battle of Waterloo?" },
+        { value: 600,  q: "This Chinese leader founded the People's Republic of China in 1949 after a communist revolution.", a: "Who is Mao Zedong?" },
+        { value: 800,  q: "The 1962 standoff between the United States and Soviet Union that brought the world to the brink of nuclear war.", a: "What is the Cuban Missile Crisis?" },
+        { value: 1000, q: "This Russian revolutionary leader founded the Bolshevik party and led the 1917 revolution that created the Soviet Union.", a: "Who is Vladimir Lenin?" }
+      ]
+    }
+  },
+
+  // ── 18. FAMOUS INVENTIONS ────────────────────────────────────────────────
+  {
+    name: "Famous Inventions",
+    questions: {
+      easy: [
+        { value: 200,  q: "Thomas Edison invented this device that first brought electric light into homes.", a: "What is the light bulb?" },
+        { value: 400,  q: "Alexander Graham Bell invented this device that allows people to talk across long distances.", a: "What is the telephone?" },
+        { value: 600,  q: "These two brothers made the first successful powered airplane flight in Kitty Hawk, North Carolina in 1903.", a: "Who are the Wright Brothers?" },
+        { value: 800,  q: "Johannes Gutenberg invented this machine in the 1440s that made books widely available for the first time.", a: "What is the printing press?" },
+        { value: 1000, q: "Tim Berners-Lee invented this global information network in 1989.", a: "What is the World Wide Web?" }
+      ],
+      medium: [
+        { value: 200,  q: "The technology company founded by Steve Jobs that created the Macintosh computer and the iPhone.", a: "What is Apple?" },
+        { value: 400,  q: "Alfred Nobel invented this powerful explosive substance — and later used his fortune to fund the prizes that bear his name.", a: "What is dynamite?" },
+        { value: 600,  q: "Karl Benz is widely credited with building the first true gasoline-powered automobile in 1885.", a: "Who is Karl Benz?" },
+        { value: 800,  q: "This American Founding Father is credited with proving lightning is electricity through his famous kite-and-key experiment.", a: "Who is Benjamin Franklin?" },
+        { value: 1000, q: "The transistor — the fundamental building block of all modern electronics — was invented at this famous research laboratory in 1947.", a: "What is Bell Labs?" }
+      ],
+      hard: [
+        { value: 200,  q: "Thomas Edison's phonograph was the first device capable of doing this.", a: "What is recording and playing back sound?" },
+        { value: 400,  q: "Watson and Crick's discovery of DNA's double helix structure relied heavily on X-ray images taken by this often-overlooked scientist.", a: "Who is Rosalind Franklin?" },
+        { value: 600,  q: "Charles Darwin introduced his theory of evolution by natural selection in his landmark 1859 book with this title.", a: "What is 'On the Origin of Species'?" },
+        { value: 800,  q: "Completed in 1945, the ENIAC was the world's first example of this type of machine.", a: "What is an electronic general-purpose computer?" },
+        { value: 1000, q: "This Scottish engineer's improvements to the steam engine in the 1760s and 70s are widely credited with sparking the Industrial Revolution.", a: "Who is James Watt?" }
+      ]
+    }
+  },
+
+  // ── 19. TV SHOWS ─────────────────────────────────────────────────────────
+  {
+    name: "TV Shows",
+    questions: {
+      easy: [
+        { value: 200,  q: "This animated show features a sea sponge who lives in a pineapple under the ocean.", a: "What is SpongeBob SquarePants?" },
+        { value: 400,  q: "This long-running animated show follows the Simpson family in the fictional town of Springfield.", a: "What is The Simpsons?" },
+        { value: 600,  q: "This Disney+ Star Wars show follows a Mandalorian bounty hunter protecting a child known as 'Baby Yoda.'", a: "What is The Mandalorian?" },
+        { value: 800,  q: "This Netflix show set in 1980s Indiana features a group of kids battling creatures from a dark dimension called the 'Upside Down.'", a: "What is Stranger Things?" },
+        { value: 1000, q: "This animated Nickelodeon show follows a young Avatar named Aang who must master all four elements to save the world.", a: "What is Avatar: The Last Airbender?" }
+      ],
+      medium: [
+        { value: 200,  q: "This popular anime follows a boy named Naruto who dreams of becoming the greatest ninja in his village.", a: "What is Naruto?" },
+        { value: 400,  q: "This NBC comedy, filmed in a mockumentary style, is set in the Scranton, Pennsylvania branch of Dunder Mifflin paper company.", a: "What is The Office?" },
+        { value: 600,  q: "This HBO fantasy series, based on George R.R. Martin's novels, follows noble families fighting for the Iron Throne.", a: "What is Game of Thrones?" },
+        { value: 800,  q: "This Netflix show follows Joel and Ellie traveling across a post-apocalyptic America ravaged by a zombie-creating fungal infection.", a: "What is The Last of Us?" },
+        { value: 1000, q: "This popular anime follows students at a high school for heroes in a world where most people are born with special superpowers.", a: "What is My Hero Academia?" }
+      ],
+      hard: [
+        { value: 200,  q: "This British sci-fi series, first airing in 1963, follows an alien called 'The Doctor' who travels through time in a blue police call box.", a: "What is Doctor Who?" },
+        { value: 400,  q: "This ABC show, airing from 2004 to 2010, followed survivors of a plane crash on a mysterious island full of supernatural mysteries.", a: "What is Lost?" },
+        { value: 600,  q: "'You know nothing, Jon Snow' is one of the most quoted lines from this HBO fantasy epic.", a: "What is Game of Thrones?" },
+        { value: 800,  q: "This Breaking Bad spin-off prequel series follows lawyer Jimmy McGill before he transforms into the shady attorney Saul Goodman.", a: "What is Better Call Saul?" },
+        { value: 1000, q: "This critically acclaimed AMC drama, set in 1960s New York's advertising industry, follows the mysterious and charismatic Don Draper.", a: "What is Mad Men?" }
+      ]
+    }
+  },
+
+  // ── 20. OUTDOOR SURVIVAL ─────────────────────────────────────────────────
+  {
+    name: "Outdoor Survival",
+    questions: {
+      easy: [
+        { value: 200,  q: "The survival 'rule of threes' says you can survive only 3 minutes without this.", a: "What is air?" },
+        { value: 400,  q: "This handheld navigation tool has a magnetic needle that always points north.", a: "What is a compass?" },
+        { value: 600,  q: "The official motto of the Boy Scouts of America.", a: "What is 'Be Prepared'?" },
+        { value: 800,  q: "The universal wilderness distress signal — three whistles, three fires, or three shots — uses this number.", a: "What is three?" },
+        { value: 1000, q: "The type of shelter made by leaning branches against a support pole, used for overnight protection in the wilderness.", a: "What is a lean-to?" }
+      ],
+      medium: [
+        { value: 200,  q: "The survival rule of threes states you can survive roughly this many days without water.", a: "What is 3 days?" },
+        { value: 400,  q: "These colored markers painted on rocks and trees guide hikers along established trails.", a: "What are blazes (or trail markers)?" },
+        { value: 600,  q: "The highest rank a Boy Scout can achieve in the scouting program.", a: "What is Eagle Scout?" },
+        { value: 800,  q: "These maps, used by hikers and the military, show changes in elevation using concentric oval lines.", a: "What are topographic (topo) maps?" },
+        { value: 1000, q: "The outdoor ethics principle that states campers should leave a natural area exactly as they found it.", a: "What is Leave No Trace?" }
+      ],
+      hard: [
+        { value: 200,  q: "When building a fire, this smallest and driest material — grass, bark, or shredded leaves — is placed at the center to catch the first spark.", a: "What is tinder?" },
+        { value: 400,  q: "The North Star, used for centuries to navigate, is also known by this scientific name.", a: "What is Polaris?" },
+        { value: 600,  q: "This knot, often called the 'king of knots,' creates a fixed loop that will not slip or tighten under load.", a: "What is the bowline?" },
+        { value: 800,  q: "The Beaufort scale, ranging from 0 to 12, measures the speed and intensity of this natural force.", a: "What is wind?" },
+        { value: 1000, q: "In wilderness first aid, the acronym STOP stands for Stop, Think, Observe, and this final step.", a: "What is Plan?" }
+      ]
+    }
+  },
+
+  // ── 21. FOOD TRIVIA ──────────────────────────────────────────────────────
+  {
+    name: "Food Trivia",
+    questions: {
+      easy: [
+        { value: 200,  q: "The main ingredient in guacamole.", a: "What is avocado?" },
+        { value: 400,  q: "This Italian dish is made with flat dough topped with tomato sauce, cheese, and various toppings.", a: "What is pizza?" },
+        { value: 600,  q: "Sushi originally comes from this country.", a: "What is Japan?" },
+        { value: 800,  q: "This yellow tropical fruit is the world's most popular and is a great source of potassium.", a: "What is a banana?" },
+        { value: 1000, q: "This warm spice used in pumpkin pie and apple cider comes from the dried bark of a tree.", a: "What is cinnamon?" }
+      ],
+      medium: [
+        { value: 200,  q: "The country that invented pizza.", a: "What is Italy?" },
+        { value: 400,  q: "The main ingredient in hummus, the creamy Middle Eastern dip.", a: "What are chickpeas (garbanzo beans)?" },
+        { value: 600,  q: "The ancient civilization credited with first cultivating cacao and creating an early form of chocolate.", a: "What are the Aztecs (or Mayans)?" },
+        { value: 800,  q: "The chemical compound found in hot peppers that creates the burning sensation of heat.", a: "What is capsaicin?" },
+        { value: 1000, q: "The five basic tastes the human tongue can detect.", a: "What are sweet, sour, salty, bitter, and umami?" }
+      ],
+      hard: [
+        { value: 200,  q: "The Maillard reaction is the scientific process responsible for the brown crust that forms on meat when cooked at high heat.", a: "What is browning (or the Maillard reaction)?" },
+        { value: 400,  q: "This fermentation process uses microscopic fungi to convert sugars into carbon dioxide, making bread dough rise.", a: "What is yeast fermentation?" },
+        { value: 600,  q: "The French culinary term for having all your ingredients measured, prepped, and ready before you begin cooking.", a: "What is mise en place?" },
+        { value: 800,  q: "The pH scale measures acidity — foods like vinegar and lemon juice have a low pH, meaning they are this.", a: "What is acidic?" },
+        { value: 1000, q: "Auguste Escoffier, the father of classical French cuisine, codified the concept of these five foundational sauces from which all other sauces derive.", a: "What are the mother sauces?" }
+      ]
+    }
+  },
+
+  // ── 22. CARS & VEHICLES ──────────────────────────────────────────────────
+  {
+    name: "Cars & Vehicles",
+    questions: {
+      easy: [
+        { value: 200,  q: "Elon Musk's electric vehicle company, headquartered in Texas.", a: "What is Tesla?" },
+        { value: 400,  q: "The Italian sports car brand famous for its prancing horse logo.", a: "What is Ferrari?" },
+        { value: 600,  q: "The country that manufactures Toyota, Honda, and Nissan vehicles.", a: "What is Japan?" },
+        { value: 800,  q: "The dashboard instrument that tells you how fast your car is traveling.", a: "What is the speedometer?" },
+        { value: 1000, q: "The unit used to measure an engine's power output.", a: "What is horsepower?" }
+      ],
+      medium: [
+        { value: 200,  q: "This German car brand's name literally translates to 'people's car.'", a: "What is Volkswagen?" },
+        { value: 400,  q: "Henry Ford's revolutionary manufacturing method that made cars affordable for average Americans.", a: "What is the assembly line?" },
+        { value: 600,  q: "MPG, a key figure listed on car window stickers, stands for this.", a: "What is miles per gallon?" },
+        { value: 800,  q: "This iconic American muscle car, produced by Ford since 1964, is named after a wild horse.", a: "What is the Ford Mustang?" },
+        { value: 1000, q: "The annual race where cars complete 500 miles around a 2.5-mile oval track in Indianapolis, Indiana.", a: "What is the Indianapolis 500 (Indy 500)?" }
+      ],
+      hard: [
+        { value: 200,  q: "The country where Ferrari, Lamborghini, and Maserati are all headquartered.", a: "What is Italy?" },
+        { value: 400,  q: "A car engine's 'torque' measures this type of force — especially important for towing and quick acceleration.", a: "What is rotational (or twisting) force?" },
+        { value: 600,  q: "This German luxury brand's iconic three-pointed star logo represents its founders' ambition to motorize travel on land, sea, and air.", a: "What is Mercedes-Benz?" },
+        { value: 800,  q: "Henry Ford's Model T, introduced in 1908, was the first automobile designed to be built using this new manufacturing approach.", a: "What is mass production (or the moving assembly line)?" },
+        { value: 1000, q: "Karl Benz is credited with building the first true gasoline-powered automobile in this year.", a: "What is 1885?" }
+      ]
+    }
+  },
+
+  // ── 23. WEIRD & WILD FACTS ───────────────────────────────────────────────
+  {
+    name: "Weird & Wild Facts",
+    questions: {
+      easy: [
+        { value: 200,  q: "This is the only planet in our solar system not named after a Roman or Greek god.", a: "What is Earth?" },
+        { value: 400,  q: "A group of fish swimming together is called this.", a: "What is a school?" },
+        { value: 600,  q: "This large flightless bird lays the largest eggs of any living bird.", a: "What is an ostrich?" },
+        { value: 800,  q: "Humans and this other primate share about 98% of their DNA.", a: "What is a chimpanzee?" },
+        { value: 1000, q: "This is the only mammal capable of true sustained flight.", a: "What is a bat?" }
+      ],
+      medium: [
+        { value: 200,  q: "Honey never spoils — archaeologists have found edible honey thousands of years old in these ancient structures.", a: "What are Egyptian pyramids (tombs)?" },
+        { value: 400,  q: "A snail can sleep for up to this many years when conditions become too dry or cold.", a: "What is 3 years?" },
+        { value: 600,  q: "The human body contains enough carbon to make approximately this many pencils.", a: "What is 9,000 pencils? (accept any answer in the thousands)" },
+        { value: 800,  q: "The dot over a lowercase 'i' or 'j' is called this.", a: "What is a tittle?" },
+        { value: 1000, q: "Cleopatra of ancient Egypt lived closer in time to the Moon landing than to the building of this ancient wonder.", a: "What is the Great Pyramid of Giza?" }
+      ],
+      hard: [
+        { value: 200,  q: "Bananas are technically this type of plant product — not a fruit in the botanical sense.", a: "What is a berry? (bananas are botanically a berry)" },
+        { value: 400,  q: "The surface area of a human lung, if unfolded, would be approximately the size of this sports playing surface.", a: "What is a tennis court?" },
+        { value: 600,  q: "Oxford University is older than the Aztec Empire — Oxford was founded around 1096 AD, while the Aztec Empire began in this century.", a: "What is the 14th century (1300s)?" },
+        { value: 800,  q: "The total weight of all ants on Earth is estimated to rival or exceed the total weight of this group.", a: "What are all humans (or all vertebrate animals)?" },
+        { value: 1000, q: "This element is so reactive that it must be stored in oil to prevent it from violently exploding on contact with air or water.", a: "What is potassium (or sodium)?" }
+      ]
+    }
   }
 
 ];
