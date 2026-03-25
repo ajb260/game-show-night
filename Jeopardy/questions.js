@@ -439,14 +439,14 @@ const FINAL_JEOPARDY = [
     a: "What are the Celestial, Terrestrial, and Telestial kingdoms?"
   },
   {
-    category: "The Bible",
-    q: "At just two words, this is the shortest verse in the King James Bible.",
-    a: "What is 'Jesus wept'? (John 11:35)"
+    category: "The Old Testament",
+    q: "This prophet called fire down from heaven to defeat 450 priests of Baal on Mount Carmel, then fled in fear from Queen Jezebel into the wilderness.",
+    a: "Who is Elijah?"
   },
   {
     category: "Sports Records",
-    q: "In February 2023, this NBA player surpassed Kareem Abdul-Jabbar to become the all-time leading scorer in NBA history.",
-    a: "Who is LeBron James?"
+    q: "This player held the NBA all-time scoring record for 38 years — from 1984 until LeBron James finally broke it in 2023.",
+    a: "Who is Kareem Abdul-Jabbar?"
   },
   {
     category: "The Solar System",
@@ -464,9 +464,9 @@ const FINAL_JEOPARDY = [
     a: "Who is King Lamoni?"
   },
   {
-    category: "Animated Movies",
-    q: "This 2003 Pixar film about a clownfish searching for his missing son became the best-selling DVD of all time at that point.",
-    a: "What is Finding Nemo?"
+    category: "Film History",
+    q: "This 1937 Walt Disney film was the first feature-length hand-drawn animated movie ever produced, and it nearly bankrupted the studio before becoming a massive hit.",
+    a: "What is Snow White and the Seven Dwarfs?"
   },
   {
     category: "Church Doctrine",
@@ -480,7 +480,7 @@ const FINAL_JEOPARDY = [
   },
   {
     category: "Science",
-    q: "This is the hardest natural substance on Earth, rating a perfect 10 on the Mohs hardness scale.",
-    a: "What is a diamond?"
+    q: "The abbreviation DNA stands for this full scientific name — the molecule that carries genetic instructions in all living organisms.",
+    a: "What is deoxyribonucleic acid?"
   }
 ];
